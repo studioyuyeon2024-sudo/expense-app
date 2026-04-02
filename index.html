@@ -5,104 +5,25 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>지출관리 - 내역 변환기</title>
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><defs><linearGradient id='g' x1='0%25' y1='0%25' x2='100%25' y2='100%25'><stop offset='0%25' stop-color='%236366f1'/><stop offset='100%25' stop-color='%2310b981'/></linearGradient></defs><rect width='100' height='100' rx='20' fill='url(%23g)'/><text x='50' y='68' font-size='55' text-anchor='middle' font-family='sans-serif' font-weight='bold' fill='white'>₩</text></svg>">
-<meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="지출관리">
-<meta name="theme-color" content="#6366f1">
-<script>
-// Generate PWA icon and manifest
-(function(){
-  function makeIcon(size){
-    var c=document.createElement('canvas');c.width=size;c.height=size;
-    var x=c.getContext('2d');
-    var g=x.createLinearGradient(0,0,size,size);
-    g.addColorStop(0,'#6366f1');g.addColorStop(1,'#10b981');
-    var r=size*0.18;
-    x.beginPath();x.moveTo(r,0);x.lineTo(size-r,0);x.quadraticCurveTo(size,0,size,r);
-    x.lineTo(size,size-r);x.quadraticCurveTo(size,size,size-r,size);
-    x.lineTo(r,size);x.quadraticCurveTo(0,size,0,size-r);
-    x.lineTo(0,r);x.quadraticCurveTo(0,0,r,0);x.closePath();
-    x.fillStyle=g;x.fill();
-    x.fillStyle='#fff';x.font='bold '+Math.round(size*0.52)+'px sans-serif';
-    x.textAlign='center';x.textBaseline='middle';
-    x.fillText('₩',size/2,size*0.52);
-    return c.toDataURL('image/png');
-  }
-  var i192=makeIcon(192),i512=makeIcon(512);
-  var m={name:"지출관리",short_name:"지출관리",description:"지출 내역 변환기",start_url:".",display:"standalone",background_color:"#f5f6fa",theme_color:"#6366f1",
-    icons:[{src:i192,sizes:"192x192",type:"image/png"},{src:i512,sizes:"512x512",type:"image/png"}]};
-  var b=new Blob([JSON.stringify(m)],{type:'application/json'});
-  var l=document.createElement('link');l.rel='manifest';l.href=URL.createObjectURL(b);
-  document.head.appendChild(l);
-  var a=document.createElement('link');a.rel='apple-touch-icon';a.href=i192;
-  document.head.appendChild(a);
-})();
-</script>
-<script>
-// Generate PWA icons and manifest dynamically
-function genIcon(size) {
-  const c = document.createElement('canvas');
-  c.width = size; c.height = size;
-  const ctx = c.getContext('2d');
-  // Rounded rect with gradient
-  const r = size * 0.18;
-  const grd = ctx.createLinearGradient(0, 0, size, size);
-  grd.addColorStop(0, '#6366f1');
-  grd.addColorStop(1, '#10b981');
-  ctx.beginPath();
-  ctx.moveTo(r, 0); ctx.lineTo(size-r, 0); ctx.quadraticCurveTo(size, 0, size, r);
-  ctx.lineTo(size, size-r); ctx.quadraticCurveTo(size, size, size-r, size);
-  ctx.lineTo(r, size); ctx.quadraticCurveTo(0, size, 0, size-r);
-  ctx.lineTo(0, r); ctx.quadraticCurveTo(0, 0, r, 0);
-  ctx.closePath();
-  ctx.fillStyle = grd; ctx.fill();
-  // ₩ symbol
-  ctx.fillStyle = '#fff';
-  ctx.font = `bold ${size*0.52}px sans-serif`;
-  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-  ctx.fillText('₩', size/2, size/2 + size*0.03);
-  return c.toDataURL('image/png');
-}
-window.addEventListener('DOMContentLoaded', () => {
-  const i192 = genIcon(192), i512 = genIcon(512);
-  // Apple touch icon
-  const link = document.createElement('link');
-  link.rel = 'apple-touch-icon'; link.href = i192;
-  document.head.appendChild(link);
-  // Manifest
-  const manifest = {
-    name: '지출관리 - 내역 변환기',
-    short_name: '지출관리',
-    description: '지출 내역 자동 분류 및 공문 생성',
-    start_url: '/',
-    display: 'standalone',
-    background_color: '#f5f6fa',
-    theme_color: '#6366f1',
-    icons: [
-      { src: i192, sizes: '192x192', type: 'image/png' },
-      { src: i512, sizes: '512x512', type: 'image/png' }
-    ]
-  };
-  const blob = new Blob([JSON.stringify(manifest)], {type:'application/json'});
-  const mLink = document.createElement('link');
-  mLink.rel = 'manifest'; mLink.href = URL.createObjectURL(blob);
-  document.head.appendChild(mLink);
-});
-</script>
-<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+<meta name="theme-color" content="#0f172a">
+<link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.9/babel.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
+  :root{--mono:'JetBrains Mono',monospace}
   *{box-sizing:border-box;margin:0;padding:0}
-  body{background:#f5f6fa;font-family:'Noto Sans KR','Apple SD Gothic Neo',sans-serif}
-  @keyframes fadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+  body{background:#f0f2f7;font-family:'Pretendard','Apple SD Gothic Neo','Malgun Gothic',sans-serif;color:#0f172a;font-size:13px;-webkit-font-smoothing:antialiased}
+  @keyframes fadeUp{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
   @keyframes fadeIn{from{opacity:0}to{opacity:1}}
-  input:focus,select:focus{outline:none;border-color:#6366f1!important;box-shadow:0 0 0 3px rgba(99,102,241,.1)}
-  button{cursor:pointer;transition:all .12s ease;font-family:inherit}
-  button:hover:not(:disabled){filter:brightness(1.04);transform:translateY(-1px)}
-  button:active{transform:translateY(0)}
+  input:focus,select:focus,textarea:focus{outline:none;border-color:#4f46e5!important;box-shadow:0 0 0 3px rgba(79,70,229,.1)}
+  button{cursor:pointer;transition:all .1s;font-family:inherit}
+  button:hover:not(:disabled){filter:brightness(1.05)}
+  button:active:not(:disabled){transform:scale(.98)}
+  button:disabled{opacity:.4;cursor:not-allowed}
   select{font-family:inherit;cursor:pointer}
   input{font-family:inherit}
   ::-webkit-scrollbar{width:5px;height:5px}
@@ -549,7 +470,7 @@ function App() {
                   <td style={S.tdc}><input type="checkbox" checked={selected.has(row.id)} onChange={()=>{const n=new Set(selected);n.has(row.id)?n.delete(row.id):n.add(row.id);setSelected(n);}}/></td>
                   <td style={{...S.td,color:"#b0b8c4",fontSize:11,fontWeight:700}}>{idx+1}</td>
                   <td style={{...S.td,whiteSpace:"nowrap",fontSize:12.5,color:"#475569"}}>{row.date}</td>
-                  <td style={{...S.td,textAlign:"right",fontWeight:800,fontVariantNumeric:"tabular-nums",color:"#0f172a",fontSize:13}}>{fmt(row.amount)}<span style={{fontWeight:400,color:"#94a3b8",fontSize:11}}>원</span></td>
+                  <td style={{...S.td,textAlign:"right",fontWeight:800,fontFamily:"var(--mono)",fontVariantNumeric:"tabular-nums",color:"#0f172a",fontSize:13}}>{fmt(row.amount)}<span style={{fontWeight:400,color:"#94a3b8",fontSize:10}}>원</span></td>
                   <td style={{...S.td,fontWeight:600,maxWidth:170,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",fontSize:13}}>{row.place}</td>
                   <td style={S.td}>
                     <CatSelect value={row.catId} onChange={v=>setCat(row.id,v,isNew)} />
@@ -592,24 +513,26 @@ function App() {
       }}>{toast.type==="ok"?"✓":"⚠"} {toast.msg}</div>}
 
       <nav style={S.nav}>
-        <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:28,paddingLeft:4}}>
-          <span style={{fontSize:26}}>💰</span>
-          <span style={{fontSize:18,fontWeight:800,color:"#1e293b",letterSpacing:"-0.5px"}}>지출관리</span>
+        <div style={{padding:"14px 14px 16px",borderBottom:"1px solid rgba(255,255,255,.06)"}}>
+          <div style={{display:"flex",alignItems:"center",gap:8}}>
+            <div style={{width:26,height:26,borderRadius:7,background:"linear-gradient(135deg,#6366f1,#10b981)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:13,fontWeight:900,color:"#fff"}}>₩</div>
+            <span style={{fontSize:15,fontWeight:800,color:"#fff",letterSpacing:"-0.3px"}}>지출관리</span>
+          </div>
         </div>
-        <div style={{display:"flex",flexDirection:"column",gap:3,flex:1}}>
-          {[["home","📊","대시보드"],["upload","📤","파일 업로드"],["history","📋","전체 내역"],["preview","📑","미리보기"]].map(([id,ic,lb])=>(
+        <div style={{padding:"6px 8px",flex:1}}>
+          {[["home","📊","대시보드"],["upload","📤","업로드"],["history","📋","전체내역"],["preview","📑","미리보기"]].map(([id,ic,lb])=>(
             <button key={id} onClick={()=>{setView(id);setSelected(new Set());setFilterTab("all");setFilterMonth("all");}}
               style={{...S.nb,...((view===id||(view==="classify"&&id==="upload"))?S.nbA:{})}}>
-              <span style={{fontSize:16}}>{ic}</span><span>{lb}</span>
+              <span style={{fontSize:14}}>{ic}</span><span>{lb}</span>
             </button>
           ))}
         </div>
-        <div style={{borderTop:"1px solid #f1f5f9",paddingTop:14,display:"flex",flexDirection:"column",gap:6}}>
+        <div style={{padding:"6px 8px",borderTop:"1px solid rgba(255,255,255,.06)",display:"flex",flexDirection:"column",gap:1}}>
           <button style={S.ns} onClick={exportXLSX} disabled={!rows.length}>📥 엑셀 내보내기</button>
-          <button style={S.ns} onClick={saveToFile} disabled={!rows.length}>💾 파일로 저장</button>
-          <button style={S.ns} onClick={()=>jsonRef.current?.click()}>📂 파일에서 불러오기</button>
+          <button style={S.ns} onClick={saveToFile} disabled={!rows.length}>💾 파일 백업</button>
+          <button style={S.ns} onClick={()=>jsonRef.current?.click()}>📂 백업 불러오기</button>
           <input ref={jsonRef} type="file" accept=".json" style={{display:"none"}} onChange={e=>{loadFromFile(e.target.files[0]);e.target.value="";}}/>
-          <button style={{...S.ns,color:"#ef4444"}} onClick={resetAll}>🗑️ 초기화</button>
+          <button style={{...S.ns,color:"#f87171"}} onClick={resetAll}>🗑️ 초기화</button>
         </div>
       </nav>
 
@@ -625,18 +548,18 @@ function App() {
               <button style={S.pri} onClick={()=>setView("upload")}>📤 파일 업로드</button>
             </div>
           ) : (<>
-            <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(190px,1fr))",gap:14,marginBottom:24}}>
+            <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:10,marginBottom:16}}>
               {[
-                {lb:"총 지출",v:`${fmt(st.amt)}원`,sub:`${st.total}건`,bg:"linear-gradient(135deg,#667eea,#764ba2)",click:null},
-                {lb:"일반지출",v:`${fmt(st.gAmt)}원`,sub:`${st.gCnt}건`,bg:"linear-gradient(135deg,#3b82f6,#1d4ed8)",click:()=>{setPreviewTab("일반지출");setPreviewCat("all");setView("preview");}},
-                {lb:"일상경비",v:`${fmt(st.dAmt)}원`,sub:`${st.dCnt}건`,bg:"linear-gradient(135deg,#10b981,#059669)",click:()=>{setPreviewTab("일상경비");setPreviewCat("all");setView("preview");}},
-                {lb:"미분류",v:`${st.undo}건`,sub:st.undo?"분류 필요":"완료!",bg:st.undo?"linear-gradient(135deg,#f59e0b,#d97706)":"linear-gradient(135deg,#6b7280,#4b5563)",click:st.undo?()=>{setFilterTab("미분류");setView("history");}:null},
+                {lb:"총 지출액",v:`${fmt(st.amt)}`,sub:`${st.total}건`,bg:"linear-gradient(135deg,#1e1b4b,#312e81)",click:null},
+                {lb:"일반지출",v:`${fmt(st.gAmt)}`,sub:`${st.gCnt}건`,bg:"linear-gradient(135deg,#1e3a5f,#1d4ed8)",click:()=>{setPreviewTab("일반지출");setPreviewCat("all");setView("preview");}},
+                {lb:"일상경비",v:`${fmt(st.dAmt)}`,sub:`${st.dCnt}건`,bg:"linear-gradient(135deg,#064e3b,#059669)",click:()=>{setPreviewTab("일상경비");setPreviewCat("all");setView("preview");}},
+                {lb:"미분류",v:`${st.undo}건`,sub:st.undo?"분류 필요":"완료!",bg:st.undo?"linear-gradient(135deg,#78350f,#b45309)":"linear-gradient(135deg,#374151,#4b5563)",click:st.undo?()=>{setFilterTab("미분류");setView("history");}:null},
               ].map((c,i)=>(
-                <div key={i} onClick={c.click} style={{padding:"18px 20px",borderRadius:14,color:"#fff",background:c.bg,boxShadow:"0 4px 14px rgba(0,0,0,.1)",cursor:c.click?"pointer":"default",transition:"transform .12s"}}
-                  onMouseEnter={e=>{if(c.click)e.currentTarget.style.transform="translateY(-2px)"}} onMouseLeave={e=>{e.currentTarget.style.transform="none"}}>
-                  <div style={{fontSize:11,fontWeight:500,opacity:.85}}>{c.lb}{c.click?" →":""}</div>
-                  <div style={{fontSize:20,fontWeight:800,margin:"5px 0 2px",letterSpacing:"-0.5px"}}>{c.v}</div>
-                  <div style={{fontSize:11,opacity:.7}}>{c.sub}</div>
+                <div key={i} onClick={c.click} style={{padding:"14px 16px",borderRadius:10,color:"#fff",background:c.bg,cursor:c.click?"pointer":"default",transition:"transform .1s"}}
+                  onMouseEnter={e=>{if(c.click)e.currentTarget.style.transform="translateY(-1px)"}} onMouseLeave={e=>{e.currentTarget.style.transform="none"}}>
+                  <div style={{fontSize:10,fontWeight:500,opacity:.75,marginBottom:6}}>{c.lb}{c.click?" →":""}</div>
+                  <div style={{fontFamily:"var(--mono)",fontSize:18,fontWeight:800,letterSpacing:"-0.5px"}}>{c.v}{i<3&&<span style={{fontSize:11,fontWeight:500,opacity:.6,marginLeft:2}}>원</span>}</div>
+                  <div style={{fontSize:10,opacity:.55,marginTop:2}}>{c.sub}</div>
                 </div>
               ))}
             </div>
@@ -659,8 +582,8 @@ function App() {
                       <span style={{fontSize:10.5,color:"#94a3b8",background:"#f1f5f9",padding:"1px 6px",borderRadius:4}}>{cr.length}건</span>
                     </div>
                     <div style={{display:"flex",gap:10,alignItems:"baseline"}}>
-                      <span style={{fontSize:12,fontWeight:700,color:over?"#ef4444":"#1e293b",fontVariantNumeric:"tabular-nums"}}>{fmt(spent)}</span>
-                      <span style={{fontSize:11,color:"#94a3b8"}}>/ {fmt(bg)}원</span>
+                      <span style={{fontFamily:"var(--mono)",fontSize:12,fontWeight:700,color:over?"#ef4444":"#1e293b",fontVariantNumeric:"tabular-nums"}}>{fmt(spent)}</span>
+                      <span style={{fontFamily:"var(--mono)",fontSize:11,color:"#94a3b8"}}>/ {fmt(bg)}원</span>
                     </div>
                   </div>
                   {bg>0&&<div style={{height:4,background:"#e2e8f0",borderRadius:2,overflow:"hidden"}}>
@@ -678,7 +601,7 @@ function App() {
               {rows.slice(0,5).map(r=>(
                 <div key={r.id} style={{display:"flex",alignItems:"center",gap:12,padding:"11px 0",borderBottom:"1px solid #f8fafc"}}>
                   <div style={{flex:1}}><div style={{fontSize:13.5,fontWeight:600}}>{r.place}</div><div style={{fontSize:11.5,color:"#94a3b8"}}>{r.date}</div></div>
-                  <div style={{fontSize:13.5,fontWeight:700,fontVariantNumeric:"tabular-nums",whiteSpace:"nowrap"}}>{fmt(r.amount)}원</div>
+                  <div style={{fontSize:13,fontFamily:"var(--mono)",fontWeight:700,fontVariantNumeric:"tabular-nums",whiteSpace:"nowrap"}}>{fmt(r.amount)}원</div>
                   <TabBadge tab={r.tab}/>
                 </div>
               ))}
@@ -1043,37 +966,37 @@ function App() {
 }
 
 const S = {
-  wrap:{display:"flex",minHeight:"100vh",background:"#f5f6fa",color:"#1e293b"},
-  nav:{width:220,background:"#fff",borderRight:"1px solid #eaecf0",padding:"22px 14px",display:"flex",flexDirection:"column",position:"sticky",top:0,height:"100vh",flexShrink:0},
-  nb:{display:"flex",alignItems:"center",gap:9,padding:"10px 12px",border:"none",borderRadius:9,background:"transparent",fontSize:13.5,fontWeight:500,color:"#64748b",textAlign:"left",fontFamily:"inherit"},
-  nbA:{background:"#f0f0ff",color:"#4f46e5",fontWeight:700},
-  ns:{padding:"7px 10px",border:"none",borderRadius:7,background:"#f8fafc",fontSize:12,fontWeight:600,color:"#64748b",textAlign:"left",fontFamily:"inherit",width:"100%"},
-  main:{flex:1,padding:"28px 32px",maxWidth:1080,overflowX:"hidden"},
-  pt:{fontSize:22,fontWeight:800,letterSpacing:"-0.5px",marginBottom:3},
-  pd:{fontSize:13.5,color:"#94a3b8",marginBottom:22},
-  empty:{textAlign:"center",padding:"56px 20px",background:"#fff",borderRadius:14,border:"1px solid #eaecf0"},
-  pri:{padding:"10px 22px",background:"linear-gradient(135deg,#6366f1,#4f46e5)",color:"#fff",border:"none",borderRadius:10,fontSize:13.5,fontWeight:700,boxShadow:"0 2px 10px rgba(99,102,241,.22)",fontFamily:"inherit"},
-  sec2:{padding:"10px 22px",background:"#fff",color:"#64748b",border:"1px solid #e2e8f0",borderRadius:10,fontSize:13.5,fontWeight:600,fontFamily:"inherit"},
-  sec:{background:"#fff",borderRadius:14,padding:"18px 22px",marginBottom:18,border:"1px solid #eaecf0"},
-  st:{fontSize:15,fontWeight:700,marginBottom:14},
-  drop:{border:"2px dashed #d1d5db",borderRadius:16,padding:"56px 36px",textAlign:"center",cursor:"pointer",background:"#fff",transition:"all .2s"},
-  dropA:{borderColor:"#6366f1",background:"#f5f3ff"},
-  toolbar:{display:"flex",justifyContent:"space-between",alignItems:"center",gap:10,marginBottom:12,flexWrap:"wrap"},
-  fbtn:{padding:"5px 13px",border:"1px solid #e2e8f0",borderRadius:7,background:"#fff",fontSize:12.5,fontWeight:500,color:"#64748b",fontFamily:"inherit"},
-  fbtnA:{background:"#1e293b",color:"#fff",borderColor:"#1e293b"},
-  bbtn:{padding:"5px 14px",background:"#f59e0b",color:"#fff",border:"none",borderRadius:7,fontSize:12,fontWeight:700,whiteSpace:"nowrap",fontFamily:"inherit"},
-  sel:{padding:"5px 8px",border:"2px solid #e2e8f0",borderRadius:6,fontSize:12,width:"100%",background:"#fff",color:"#334155",marginBottom:3},
-  badge:{display:"inline-block",padding:"2px 7px",borderRadius:4,fontSize:10.5,fontWeight:700,marginTop:2},
-  tw:{borderRadius:12,border:"1px solid #eaecf0",overflow:"auto",background:"#fff",boxShadow:"0 1px 3px rgba(0,0,0,.03)"},
-  tbl:{width:"100%",borderCollapse:"collapse",fontSize:13},
-  th:{padding:"10px 9px",borderBottom:"2px solid #eaecf0",fontWeight:700,textAlign:"left",fontSize:11.5,color:"#64748b",whiteSpace:"nowrap"},
-  thc:{padding:"10px 7px",borderBottom:"2px solid #eaecf0",width:34,textAlign:"center"},
-  td:{padding:"9px 9px",fontSize:13},
-  tdc:{padding:"9px 7px",textAlign:"center"},
-  inp:{padding:"3px 7px",border:"1px solid #e2e8f0",borderRadius:5,fontSize:11.5,flex:1,minWidth:65,color:"#334155",background:"#fafafc",fontFamily:"inherit"},
-  tiny:{border:"none",background:"none",fontSize:12.5,padding:"2px 5px",borderRadius:4,fontWeight:600},
-  pvTh:{padding:"10px 14px",background:"#f8f9fb",borderBottom:"2px solid #eaecf0",fontWeight:700,fontSize:11.5,color:"#64748b",textAlign:"left",whiteSpace:"nowrap"},
-  pvTd:{padding:"10px 14px",fontSize:13,whiteSpace:"nowrap"},
+  wrap:{display:"flex",minHeight:"100vh",background:"#f0f2f7",color:"#0f172a"},
+  nav:{width:192,background:"#0f172a",display:"flex",flexDirection:"column",position:"sticky",top:0,height:"100vh",flexShrink:0,overflow:"hidden"},
+  nb:{display:"flex",alignItems:"center",gap:8,padding:"8px 12px",width:"100%",border:"none",borderRadius:7,background:"transparent",fontSize:13,fontWeight:500,color:"#94a3b8",textAlign:"left",fontFamily:"inherit",marginBottom:1},
+  nbA:{background:"rgba(255,255,255,.08)",color:"#fff",fontWeight:700},
+  ns:{padding:"6px 12px",border:"none",borderRadius:5,background:"transparent",fontSize:11,fontWeight:500,color:"#64748b",textAlign:"left",fontFamily:"inherit",width:"100%"},
+  main:{flex:1,padding:"18px 22px",minWidth:0,maxWidth:1200,overflowX:"hidden"},
+  pt:{fontSize:19,fontWeight:800,letterSpacing:"-0.5px",marginBottom:2},
+  pd:{fontSize:12,color:"#94a3b8",marginBottom:14},
+  empty:{textAlign:"center",padding:"48px 20px",background:"#fff",borderRadius:10,border:"1px solid #e2e8f0"},
+  pri:{padding:"8px 18px",background:"linear-gradient(135deg,#4f46e5,#4338ca)",color:"#fff",border:"none",borderRadius:8,fontSize:13,fontWeight:700,boxShadow:"0 2px 8px rgba(79,70,229,.2)",fontFamily:"inherit"},
+  sec2:{padding:"8px 18px",background:"#fff",color:"#475569",border:"1px solid #e2e8f0",borderRadius:8,fontSize:13,fontWeight:600,fontFamily:"inherit"},
+  sec:{background:"#fff",borderRadius:10,padding:"14px 16px",marginBottom:14,border:"1px solid #e2e8f0"},
+  st:{fontSize:13,fontWeight:700,marginBottom:10},
+  drop:{border:"2px dashed #cbd5e1",borderRadius:10,padding:"44px 20px",textAlign:"center",cursor:"pointer",background:"#fff",transition:"all .15s"},
+  dropA:{borderColor:"#4f46e5",background:"#f5f3ff"},
+  toolbar:{display:"flex",justifyContent:"space-between",alignItems:"center",gap:8,marginBottom:8,flexWrap:"wrap"},
+  fbtn:{padding:"4px 10px",border:"1px solid #e2e8f0",borderRadius:6,background:"#fff",fontSize:12,fontWeight:500,color:"#475569",fontFamily:"inherit"},
+  fbtnA:{background:"#0f172a",color:"#fff",borderColor:"#0f172a"},
+  bbtn:{padding:"4px 12px",background:"#d97706",color:"#fff",border:"none",borderRadius:6,fontSize:11.5,fontWeight:700,whiteSpace:"nowrap",fontFamily:"inherit"},
+  sel:{padding:"5px 8px",border:"1.5px solid #e2e8f0",borderRadius:5,fontSize:12,width:"100%",background:"#fff",color:"#334155",marginBottom:2},
+  badge:{display:"inline-block",padding:"1px 6px",borderRadius:3,fontSize:10,fontWeight:700,letterSpacing:"-.2px"},
+  tw:{borderRadius:8,border:"1px solid #e2e8f0",overflow:"auto",background:"#fff"},
+  tbl:{width:"100%",borderCollapse:"collapse",fontSize:12.5},
+  th:{padding:"8px",borderBottom:"1px solid #e2e8f0",fontWeight:700,textAlign:"left",fontSize:10.5,color:"#94a3b8",whiteSpace:"nowrap"},
+  thc:{padding:"8px 6px",borderBottom:"1px solid #e2e8f0",width:30,textAlign:"center"},
+  td:{padding:"7px 8px",fontSize:12.5},
+  tdc:{padding:"7px 6px",textAlign:"center"},
+  inp:{padding:"3px 6px",border:"1px solid #e2e8f0",borderRadius:4,fontSize:11,flex:1,minWidth:55,color:"#334155",background:"#fafafc",fontFamily:"inherit"},
+  tiny:{border:"none",background:"none",fontSize:12,padding:"1px 4px",borderRadius:3,fontWeight:600},
+  pvTh:{padding:"7px 10px",background:"#f8f9fb",borderBottom:"1px solid #e2e8f0",fontWeight:700,fontSize:10.5,color:"#94a3b8",textAlign:"left",whiteSpace:"nowrap"},
+  pvTd:{padding:"7px 10px",fontSize:12.5,whiteSpace:"nowrap"},
 };
 
 ReactDOM.createRoot(document.getElementById("root")).render(React.createElement(App));
