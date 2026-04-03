@@ -1346,8 +1346,9 @@ function App() {
                             const w = isMon?"36px":isAmt?"90px":isDate?"135px":isPlace?"110px":isDetail?"auto":isEtc?"70px":"80px";
                             return <col key={fi} style={{width:w}}/>;
                           })}
-                          <col style={{width:56}}/>
+                          <col style={{width:50}}/>
                           <col style={{width:110}}/>
+                          <col style={{width:32}}/>
                         </colgroup>
                         <thead>
                           <tr>
@@ -1359,8 +1360,9 @@ function App() {
                             {cat.fields.map((f,fi)=>(
                               <th key={fi} style={{...S.pvTh,...(f==="금액"||f==="지출"||f===cat.amountField?{textAlign:"right"}:{})}}>{f}</th>
                             ))}
-                            <th style={{...S.pvTh,width:56}}/>
+                            <th style={{...S.pvTh,width:50}}/>
                             <th style={{...S.pvTh,width:110,textAlign:"center"}}>진행상태</th>
+                            <th style={{...S.pvTh,width:32}}/>
                           </tr>
                         </thead>
                         <tbody>
@@ -1433,8 +1435,6 @@ function App() {
                                     <button onClick={()=>openDocModal(row)} style={{...S.tiny,color:"#6366f1",fontSize:14}} title="공문 생성">📄</button>
                                   </>;
                                 })()}
-                                <button onClick={()=>del(row.id)} style={{...S.tiny,color:"#ef4444",opacity:.5}} title="삭제"
-                                  onMouseEnter={e=>e.currentTarget.style.opacity="1"} onMouseLeave={e=>e.currentTarget.style.opacity=".5"}>✕</button>
                               </td>
                               <td style={{...S.pvTd,textAlign:"center",whiteSpace:"nowrap"}}>
                                 {(()=>{
@@ -1455,6 +1455,10 @@ function App() {
                                   </div>;
                                 })()}
                               </td>
+                              <td style={{...S.pvTd,textAlign:"center"}}>
+                                <button onClick={()=>{if(confirm(`"${row.place}" (${fmt(row.amount)}원) 내역을 삭제하시겠습니까?`))del(row.id);}} style={{...S.tiny,color:"#ef4444",opacity:.4,fontSize:11}} title="삭제"
+                                  onMouseEnter={e=>e.currentTarget.style.opacity="1"} onMouseLeave={e=>e.currentTarget.style.opacity=".4"}>✕</button>
+                              </td>
                             </tr>;
                           })}
                         </tbody>
@@ -1466,6 +1470,7 @@ function App() {
                               const isAmt = f==="금액"||f==="지출"||f===cat.amountField;
                               return <td key={fi} style={{...S.pvTd,...(isAmt?{textAlign:"right",fontWeight:800,fontSize:14,color:accent}:{})}}>{isAmt?fmt(catTotal)+"원":""}</td>;
                             })}
+                            <td style={S.pvTd}/>
                             <td style={S.pvTd}/>
                             <td style={S.pvTd}/>
                           </tr>
