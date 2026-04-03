@@ -1138,6 +1138,21 @@ function App() {
           <div style={{height:1,background:"rgba(255,255,255,.06)",margin:"4px 12px"}}/>
           <button style={{...S.ns,color:"#f87171"}} onClick={resetAll}>🗑️ 초기화</button>
           <button style={{...S.ns,color:"#94a3b8"}} onClick={()=>{if(confirm("과(부서)를 변경하시겠습니까?\n현재 과의 데이터는 보존됩니다.")){savePresetChoice("");setPresetName("");setLoading(false);}}}>🔄 과 변경</button>
+          <button style={{...S.ns,color:"#f87171"}} onClick={()=>{
+            if(!confirm(`"${presetName}" 프리셋을 완전히 삭제하시겠습니까?\n모든 데이터(사용내역, 예산, 공문설정)가 삭제됩니다.`)) return;
+            if(!confirm("정말로 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.")) return;
+            // localStorage에서 해당 프리셋 데이터 삭제
+            try { localStorage.removeItem(getStorageKey(presetName)); } catch{}
+            // 커스텀 프리셋에서 제거
+            const custom = loadCustomPresets();
+            delete custom[presetName];
+            saveCustomPresets(custom);
+            setAllPresets(getAllPresets());
+            savePresetChoice("");
+            setPresetName("");
+            setLoading(false);
+            setSideOpen(false);
+          }}>🗑️ 프리셋 삭제</button>
         </div>
       </nav>
 
@@ -1994,6 +2009,7 @@ function App() {
             const [예산과목, set예산과목] = useState(tmpl?.예산과목||"");
             const [titles, setTitles] = useState(tmpl?.titles||[]);
             const [addMode, setAddMode] = useState(false);
+            const [editTitleIdx, setEditTitleIdx] = useState(null); // 수정 중인 제목 인덱스
             // 새 제목 폼
             const [newTitle, setNewTitle] = useState({label:"",intro:"",amtLabel:"집 행 액",참석label:"참 석 자",참석desc:"",hasN:false,noAttendee:false,isStaff:false});
 
@@ -2007,6 +2023,9 @@ function App() {
             };
             const removeTitle = (idx) => {
               setTitles(titles.filter((_,i)=>i!==idx));
+            };
+            const updateTitle = (idx, updated) => {
+              setTitles(titles.map((t,i)=>i===idx?{...t,...updated}:t));
             };
             const saveTmpl = () => {
               if(!titles.length||!지출방법.trim()||!예산과목.trim()) { alert("제목, 지출방법, 예산과목을 모두 입력하세요."); return; }
@@ -2051,19 +2070,61 @@ function App() {
                   <button onClick={()=>setAddMode(true)} style={{fontSize:11,fontWeight:700,color:"var(--primary)",border:"none",background:"none",padding:"2px 4px"}}>+ 제목 추가</button>
                 </div>
                 {titles.map((t,i)=>(
-                  <div key={t.id||i} style={{padding:"10px 14px",border:"1px solid var(--gray-200)",borderRadius:"var(--radius-sm)",marginBottom:6,background:"var(--gray-50)"}}>
-                    <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:8}}>
-                      <div style={{flex:1,minWidth:0}}>
-                        <div style={{fontSize:13,fontWeight:600,color:"var(--gray-800)",marginBottom:3}}>{t.label}</div>
-                        <div style={{fontSize:11,color:"var(--gray-400)",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{t.intro}</div>
-                        <div style={{display:"flex",gap:6,marginTop:4,flexWrap:"wrap"}}>
-                          {t.hasN&&<span style={{fontSize:10,padding:"1px 6px",background:"#fef3c7",color:"#92400e",borderRadius:3}}>회차입력</span>}
-                          {t.noAttendee&&<span style={{fontSize:10,padding:"1px 6px",background:"var(--gray-100)",color:"var(--gray-500)",borderRadius:3}}>참석자 없음</span>}
-                          {t.isStaff&&<span style={{fontSize:10,padding:"1px 6px",background:"#dbeafe",color:"#1d4ed8",borderRadius:3}}>직원용</span>}
+                  <div key={t.id||i} style={{padding:"10px 14px",border:editTitleIdx===i?"2px solid var(--primary)":"1px solid var(--gray-200)",borderRadius:"var(--radius-sm)",marginBottom:6,background:editTitleIdx===i?"#fafaff":"var(--gray-50)"}}>
+                    {editTitleIdx===i ? (
+                      <div style={{display:"flex",flexDirection:"column",gap:8}}>
+                        <div>
+                          <label style={{fontSize:10,fontWeight:600,color:"var(--gray-500)"}}>제목</label>
+                          <input value={t.label} onChange={e=>updateTitle(i,{label:e.target.value})}
+                            style={{width:"100%",padding:"6px 10px",border:"1.5px solid var(--gray-200)",borderRadius:"var(--radius-sm)",fontSize:12,fontFamily:"inherit",marginTop:2}}/>
+                        </div>
+                        <div>
+                          <label style={{fontSize:10,fontWeight:600,color:"var(--gray-500)"}}>본문 서두</label>
+                          <textarea value={t.intro} onChange={e=>updateTitle(i,{intro:e.target.value})}
+                            style={{width:"100%",padding:"6px 10px",border:"1.5px solid var(--gray-200)",borderRadius:"var(--radius-sm)",fontSize:12,fontFamily:"inherit",minHeight:50,resize:"vertical",marginTop:2}}/>
+                        </div>
+                        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:6}}>
+                          <div>
+                            <label style={{fontSize:10,fontWeight:600,color:"var(--gray-500)"}}>금액라벨</label>
+                            <input value={t.amtLabel||""} onChange={e=>updateTitle(i,{amtLabel:e.target.value})}
+                              style={{width:"100%",padding:"5px 8px",border:"1.5px solid var(--gray-200)",borderRadius:"var(--radius-sm)",fontSize:11,fontFamily:"inherit",marginTop:2}}/>
+                          </div>
+                          <div>
+                            <label style={{fontSize:10,fontWeight:600,color:"var(--gray-500)"}}>참석자라벨</label>
+                            <input value={t.참석label||""} onChange={e=>updateTitle(i,{참석label:e.target.value})}
+                              style={{width:"100%",padding:"5px 8px",border:"1.5px solid var(--gray-200)",borderRadius:"var(--radius-sm)",fontSize:11,fontFamily:"inherit",marginTop:2}}/>
+                          </div>
+                          <div>
+                            <label style={{fontSize:10,fontWeight:600,color:"var(--gray-500)"}}>참석자설명</label>
+                            <input value={t.참석desc||""} onChange={e=>updateTitle(i,{참석desc:e.target.value})}
+                              style={{width:"100%",padding:"5px 8px",border:"1.5px solid var(--gray-200)",borderRadius:"var(--radius-sm)",fontSize:11,fontFamily:"inherit",marginTop:2}}/>
+                          </div>
+                        </div>
+                        <div style={{display:"flex",gap:12,alignItems:"center"}}>
+                          <label style={{fontSize:10,display:"flex",alignItems:"center",gap:3,color:"var(--gray-600)"}}><input type="checkbox" checked={!!t.hasN} onChange={e=>updateTitle(i,{hasN:e.target.checked})}/> 회차(N)</label>
+                          <label style={{fontSize:10,display:"flex",alignItems:"center",gap:3,color:"var(--gray-600)"}}><input type="checkbox" checked={!!t.noAttendee} onChange={e=>updateTitle(i,{noAttendee:e.target.checked})}/> 참석자생략</label>
+                          <label style={{fontSize:10,display:"flex",alignItems:"center",gap:3,color:"var(--gray-600)"}}><input type="checkbox" checked={!!t.isStaff} onChange={e=>updateTitle(i,{isStaff:e.target.checked})}/> 직원용</label>
+                          <div style={{flex:1}}/>
+                          <button onClick={()=>setEditTitleIdx(null)} style={{...S.pri,fontSize:11,padding:"5px 14px"}}>수정 완료</button>
                         </div>
                       </div>
-                      <button onClick={()=>removeTitle(i)} style={{...S.tiny,color:"#ef4444",fontSize:11,flexShrink:0}}>삭제</button>
-                    </div>
+                    ) : (
+                      <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:8}}>
+                        <div style={{flex:1,minWidth:0}}>
+                          <div style={{fontSize:13,fontWeight:600,color:"var(--gray-800)",marginBottom:3}}>{t.label}</div>
+                          <div style={{fontSize:11,color:"var(--gray-400)",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{t.intro}</div>
+                          <div style={{display:"flex",gap:6,marginTop:4,flexWrap:"wrap"}}>
+                            {t.hasN&&<span style={{fontSize:10,padding:"1px 6px",background:"#fef3c7",color:"#92400e",borderRadius:3}}>회차입력</span>}
+                            {t.noAttendee&&<span style={{fontSize:10,padding:"1px 6px",background:"var(--gray-100)",color:"var(--gray-500)",borderRadius:3}}>참석자 없음</span>}
+                            {t.isStaff&&<span style={{fontSize:10,padding:"1px 6px",background:"#dbeafe",color:"#1d4ed8",borderRadius:3}}>직원용</span>}
+                          </div>
+                        </div>
+                        <div style={{display:"flex",gap:4,flexShrink:0}}>
+                          <button onClick={()=>setEditTitleIdx(i)} style={{...S.tiny,color:"var(--primary)",fontSize:11}}>수정</button>
+                          <button onClick={()=>removeTitle(i)} style={{...S.tiny,color:"#ef4444",fontSize:11}}>삭제</button>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 ))}
                 {!titles.length && <p style={{textAlign:"center",color:"var(--gray-300)",padding:10,fontSize:12}}>제목을 추가하세요</p>}
