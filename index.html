@@ -1308,35 +1308,91 @@ function App() {
                     </div>
 
                     {/* Editable spreadsheet table */}
-                    <div style={{overflowX:"auto"}}>
-                      <table style={{width:"100%",borderCollapse:"collapse",fontSize:13}}>
+                    {(()=>{
+                      // 묶인 건 판별: 같은 사용목적을 가진 행들을 그룹으로
+                      const groupMap = {};
+                      catRows.forEach(r => {
+                        const purpose = r.extra?.["사용목적"];
+                        if (purpose) {
+                          if (!groupMap[purpose]) groupMap[purpose] = [];
+                          groupMap[purpose].push(r.id);
+                        }
+                      });
+                      // 2건 이상인 그룹만 묶음 표시
+                      const bundledIds = new Set();
+                      const bundleColors = ["#6366f1","#0ea5e9","#8b5cf6","#ec4899","#f59e0b","#10b981"];
+                      const bundleColorMap = {};
+                      let colorIdx = 0;
+                      Object.entries(groupMap).forEach(([purpose, ids]) => {
+                        if (ids.length >= 2) {
+                          const color = bundleColors[colorIdx % bundleColors.length];
+                          colorIdx++;
+                          ids.forEach(id => { bundledIds.add(id); bundleColorMap[id] = color; });
+                        }
+                      });
+
+                      return <div style={{overflowX:"auto"}}>
+                      <table style={{width:"100%",borderCollapse:"collapse",fontSize:13,tableLayout:"fixed"}}>
+                        <colgroup>
+                          {DOC_TEMPLATES[cat.id] && <col style={{width:34}}/>}
+                          <col style={{width:36}}/>
+                          {cat.fields.map((f,fi)=>{
+                            const isAmt = f==="금액"||f==="지출"||f===cat.amountField;
+                            const isDate = f===cat.dateField||f==="사용일자";
+                            const isPlace = f==="장소"||f===cat.placeField;
+                            const isDetail = f.includes("내역")||f.includes("목적");
+                            const isMon = f==="월";
+                            const isEtc = f==="구분(이호조)"||f==="인원";
+                            const w = isMon?"36px":isAmt?"90px":isDate?"135px":isPlace?"110px":isDetail?"auto":isEtc?"70px":"80px";
+                            return <col key={fi} style={{width:w}}/>;
+                          })}
+                          <col style={{width:56}}/>
+                          <col style={{width:110}}/>
+                        </colgroup>
                         <thead>
                           <tr>
-                            {DOC_TEMPLATES[cat.id] && <th style={{...S.pvTh,width:30,textAlign:"center"}}>
+                            {DOC_TEMPLATES[cat.id] && <th style={{...S.pvTh,width:34,textAlign:"center"}}>
                               <input type="checkbox" checked={catRows.length>0&&catRows.every(r=>docSelected.has(r.id))}
                                 onChange={()=>{const ns=new Set(docSelected);const allSel=catRows.every(r=>ns.has(r.id));catRows.forEach(r=>{allSel?ns.delete(r.id):ns.add(r.id);});setDocSelected(ns);}}/>
                             </th>}
-                            <th style={{...S.pvTh,width:40,textAlign:"center"}}>#</th>
+                            <th style={{...S.pvTh,width:36,textAlign:"center"}}>#</th>
                             {cat.fields.map((f,fi)=>(
                               <th key={fi} style={{...S.pvTh,...(f==="금액"||f==="지출"||f===cat.amountField?{textAlign:"right"}:{})}}>{f}</th>
                             ))}
-                            <th style={{...S.pvTh,width:40}}/>
-                            <th style={{...S.pvTh,minWidth:120,textAlign:"center"}}>진행상태</th>
+                            <th style={{...S.pvTh,width:56}}/>
+                            <th style={{...S.pvTh,width:110,textAlign:"center"}}>진행상태</th>
                           </tr>
                         </thead>
                         <tbody>
-                          {catRows.map((row,idx)=>(
-                            <tr key={row.id} style={{borderBottom:"1px solid #f0f1f3",background:docSelected.has(row.id)?"#eef2ff":(idx%2===0?"#fff":"#fafafc"),transition:"background .1s"}}
-                              onMouseEnter={e=>{if(!docSelected.has(row.id))e.currentTarget.style.background="#f5f6ff";}} onMouseLeave={e=>{if(!docSelected.has(row.id))e.currentTarget.style.background=idx%2===0?"#fff":"#fafafc";}}>
-                              {DOC_TEMPLATES[cat.id] && <td style={{...S.pvTd,textAlign:"center"}}>
+                          {catRows.map((row,idx)=>{
+                            const isBundled = bundledIds.has(row.id);
+                            const bColor = bundleColorMap[row.id];
+                            // 묶음 그룹에서 첫 번째/마지막 행 판별
+                            const purpose = row.extra?.["사용목적"]||"";
+                            const groupIds = groupMap[purpose]||[];
+                            const isGroupFirst = isBundled && groupIds[0]===row.id;
+                            const isGroupLast = isBundled && groupIds[groupIds.length-1]===row.id;
+
+                            return <tr key={row.id} style={{
+                              borderBottom:isGroupLast?`2px solid ${bColor}33`:isBundled?"1px dashed "+bColor+"44":"1px solid #f0f1f3",
+                              ...(isGroupFirst?{borderTop:`2px solid ${bColor}33`}:{}),
+                              background:docSelected.has(row.id)?"#eef2ff":isBundled?(bColor+"08"):(idx%2===0?"#fff":"#fafafc"),
+                              transition:"background .1s"
+                            }}
+                              onMouseEnter={e=>{if(!docSelected.has(row.id))e.currentTarget.style.background=isBundled?(bColor+"14"):"#f5f6ff";}}
+                              onMouseLeave={e=>{if(!docSelected.has(row.id))e.currentTarget.style.background=isBundled?(bColor+"08"):(idx%2===0?"#fff":"#fafafc");}}>
+                              {DOC_TEMPLATES[cat.id] && <td style={{...S.pvTd,textAlign:"center",
+                                borderLeft:isBundled?`3px solid ${bColor}`:"3px solid transparent"}}>
                                 <input type="checkbox" checked={docSelected.has(row.id)} onChange={()=>{const ns=new Set(docSelected);ns.has(row.id)?ns.delete(row.id):ns.add(row.id);setDocSelected(ns);}}/>
                               </td>}
-                              <td style={{...S.pvTd,textAlign:"center",color:"#b0b8c4",fontSize:11,fontWeight:700}}>{idx+1}</td>
+                              <td style={{...S.pvTd,textAlign:"center",color:isBundled?bColor:"#b0b8c4",fontSize:11,fontWeight:700,
+                                ...(!DOC_TEMPLATES[cat.id]?{borderLeft:isBundled?`3px solid ${bColor}`:"3px solid transparent"}:{})}}>{idx+1}</td>
                               {cat.fields.map((f,fi)=>{
                                 const val = cellVal(row,f,cat);
                                 const isAmt = f==="금액"||f==="지출"||f===cat.amountField;
                                 const isMon = f==="월";
-                                const editable = !isMon; // 월은 자동 계산이라 편집 불가
+                                const isDetail = f.includes("내역")||f.includes("목적");
+                                const editable = !isMon;
 
                                 if(isEditing(row.id,f) && editable) {
                                   return <td key={fi} style={{...S.pvTd,padding:"4px 6px"}}>
@@ -1357,11 +1413,12 @@ function App() {
                                       ...S.pvTd,
                                       cursor:editable?"text":"default",
                                       ...(isAmt?{textAlign:"right",fontWeight:700,fontVariantNumeric:"tabular-nums",color:"#0f172a"}:{}),
-                                      ...(f==="장소"||f===cat.placeField?{fontWeight:600}:{}),
+                                      ...(f==="장소"||f===cat.placeField?{fontWeight:600,overflow:"hidden",textOverflow:"ellipsis"}:{}),
+                                      ...(isDetail?{overflow:"hidden",textOverflow:"ellipsis"}:{}),
                                       ...(!val&&!isAmt&&!isMon?{color:"#d1d5db"}:{}),
                                       ...(editable?{borderBottom:"1px dashed #d1d5db22"}:{}),
                                     }}
-                                    title={editable?"클릭하여 편집":""}>
+                                    title={editable?(val||"클릭하여 편집"):""}>
                                     {isAmt ? <>{fmt(row.amount)}<span style={{fontWeight:400,color:"#94a3b8",fontSize:11}}>원</span></> : (isMon ? (val?val+"월":"") : (val || "—"))}
                                   </td>
                                 );
@@ -1398,8 +1455,8 @@ function App() {
                                   </div>;
                                 })()}
                               </td>
-                            </tr>
-                          ))}
+                            </tr>;
+                          })}
                         </tbody>
                         <tfoot>
                           <tr style={{background:lightBg}}>
@@ -1414,7 +1471,8 @@ function App() {
                           </tr>
                         </tfoot>
                       </table>
-                    </div>
+                    </div>;
+                    })()}
                   </div>
                 );
               })}
