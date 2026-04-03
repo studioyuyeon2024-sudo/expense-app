@@ -264,6 +264,8 @@ function App() {
     return `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
   });
   const [discTab, setDiscTab] = useState("일반지출");
+  const [catNames, setCatNames] = useState({}); // {catId: "오버라이드 이름"}
+  const [editCatName, setEditCatName] = useState(null); // catId being edited
   const fRef = useRef(null);
 
   // Derive preset data
@@ -289,6 +291,7 @@ function App() {
     const d = loadData(name);
     setRows(d.rows||[]);
     setBudgets({...defB,...(d.budgets||{})});
+    setCatNames(d.catNames||{});
     setView("home");
     setSetupMode(null);
     setLoading(false);
@@ -462,7 +465,7 @@ function App() {
 
   const jsonRef = useRef(null);
   const saveToFile = () => {
-    const data = JSON.stringify({rows, budgets, preset: presetName, exportedAt: new Date().toISOString()}, null, 2);
+    const data = JSON.stringify({rows, budgets, catNames, preset: presetName, exportedAt: new Date().toISOString()}, null, 2);
     const blob = new Blob([data], {type:"application/json"});
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a"); a.href=url;
@@ -484,7 +487,7 @@ function App() {
           const merged=[...rows]; const keys=new Set(rows.map(r=>`${r.date}|${r.amount}|${r.place}`));
           let added=0;
           data.rows.forEach(r=>{if(!keys.has(`${r.date}|${r.amount}|${r.place}`)){merged.push(r);added++;}});
-          persist(merged,{...budgets,...(data.budgets||{})});
+          persist(merged,{...budgets,...(data.budgets||{})},{...catNames,...(data.catNames||{})});
           notify(`불러오기 완료! (${added}건 추가, 중복 ${data.rows.length-added}건 제외)`);
         }
       } catch { notify("파일 형식 오류","err"); }
@@ -499,17 +502,37 @@ function App() {
     const d = loadData(presetName);
     setRows(d.rows||[]);
     setBudgets({...DEFAULT_BUDGETS,...(d.budgets||{})});
+    setCatNames(d.catNames||{});
     setLoading(false);
   }, []);
 
-  const persist = useCallback((r, b) => {
+  const persist = useCallback((r, b, cn) => {
     if (!presetName) return;
     const newRows = r !== undefined ? r : rows;
     const newBudgets = b !== undefined ? b : budgets;
+    const newCatNames = cn !== undefined ? cn : catNames;
     if(r !== undefined) setRows(newRows);
     if(b !== undefined) setBudgets(newBudgets);
-    saveData(presetName, {rows:newRows, budgets:newBudgets});
-  }, [rows, budgets, presetName]);
+    if(cn !== undefined) setCatNames(newCatNames);
+    saveData(presetName, {rows:newRows, budgets:newBudgets, catNames:newCatNames});
+  }, [rows, budgets, catNames, presetName]);
+
+  // Helper: get category display name (override or default)
+  const getCatName = useCallback((catId) => {
+    if (catNames[catId]) return catNames[catId];
+    return ALL_CATS.find(c=>c.id===catId)?.name || catId;
+  }, [catNames, ALL_CATS]);
+
+  const updateCatName = (catId, newName) => {
+    const trimmed = newName.trim();
+    const newCN = {...catNames};
+    if (trimmed && trimmed !== (ALL_CATS.find(c=>c.id===catId)?.name||"")) {
+      newCN[catId] = trimmed;
+    } else {
+      delete newCN[catId]; // reset to default
+    }
+    persist(undefined, undefined, newCN);
+  };
 
   const processData = useCallback((data) => {
     const p = data.filter(r=>r["승인일시"]&&r["금액"]&&r["가맹점명"]).map(r=>({
@@ -588,7 +611,7 @@ function App() {
     ["일반지출","일상경비"].forEach(tn => {
       const cats=CATEGORIES[tn], tr=rows.filter(r=>r.tab===tn);
       const hr=[], cr=[];
-      cats.forEach((c,ci)=>{cr.push(c.name);c.fields.forEach((f,fi)=>{hr.push(f);if(fi>0)cr.push("");});if(ci<cats.length-1){hr.push("");cr.push("");}});
+      cats.forEach((c,ci)=>{cr.push(getCatName(c.id));c.fields.forEach((f,fi)=>{hr.push(f);if(fi>0)cr.push("");});if(ci<cats.length-1){hr.push("");cr.push("");}});
       const mx = Math.max(...cats.map(c=>tr.filter(r=>r.catId===c.id).length),0);
       const dr=[];
       for(let i=0;i<mx;i++){const rw=[];cats.forEach((c,ci)=>{const its=tr.filter(r=>r.catId===c.id),it=its[i];
@@ -616,7 +639,7 @@ function App() {
     const tab1 = monthRows.filter(r => r.tab==="일반지출");
     const data1 = tab1.map(r => [
       "교육위원", r.date, r.place, r.extra?.["사용목적"]||"", r.amount,
-      r.extra?.["인원"]||"", "카드", ALL_CATS.find(c=>c.id===r.catId)?.name||""
+      r.extra?.["인원"]||"", "카드", getCatName(r.catId)
     ]);
     const ws1 = XLSX.utils.aoa_to_sheet([headers, ...data1]);
     ws1["!cols"] = colWidths;
@@ -782,8 +805,8 @@ function App() {
   const CatSelect = ({value, onChange, small}) => (
     <select value={value} onChange={e=>onChange(e.target.value)} style={{...S.sel,...(small?{fontSize:11,padding:"4px 6px"}:{}),borderColor:value?(ALL_CATS.find(c=>c.id===value)?.tab==="일반지출"?"#93c5fd":"#6ee7b7"):"#fca5a5"}}>
       <option value="">분류 선택</option>
-      <optgroup label="━ 일반지출 ━">{CATEGORIES["일반지출"].map(c=><option key={c.id} value={c.id}>{c.name}</option>)}</optgroup>
-      <optgroup label="━ 일상경비 ━">{CATEGORIES["일상경비"].map(c=><option key={c.id} value={c.id}>{c.name}</option>)}</optgroup>
+      <optgroup label="━ 일반지출 ━">{CATEGORIES["일반지출"].map(c=><option key={c.id} value={c.id}>{getCatName(c.id)}</option>)}</optgroup>
+      <optgroup label="━ 일상경비 ━">{CATEGORIES["일상경비"].map(c=><option key={c.id} value={c.id}>{getCatName(c.id)}</option>)}</optgroup>
     </select>
   );
 
@@ -936,7 +959,7 @@ function App() {
                   <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:4}}>
                     <div style={{display:"flex",alignItems:"center",gap:8}}>
                       <span style={{width:7,height:7,borderRadius:"50%",background:ac,flexShrink:0}}/>
-                      <span style={{fontSize:13,fontWeight:500}}>{cat.name}</span>
+                      <span style={{fontSize:13,fontWeight:500}}>{getCatName(cat.id)}</span>
                       <span style={{fontSize:10.5,color:"#94a3b8",background:"#f1f5f9",padding:"1px 6px",borderRadius:4}}>{cr.length}건</span>
                     </div>
                     <div style={{display:"flex",gap:10,alignItems:"baseline"}}>
@@ -1094,7 +1117,7 @@ function App() {
                   <option value="all">전체 카테고리 ({catsWithData.length}개)</option>
                   {tabCats.map(c=>{
                     const cnt = rows.filter(r=>r.catId===c.id).length;
-                    return cnt>0 ? <option key={c.id} value={c.id}>{c.name} ({cnt}건)</option> : null;
+                    return cnt>0 ? <option key={c.id} value={c.id}>{getCatName(c.id)} ({cnt}건)</option> : null;
                   })}
                 </select>
 
@@ -1114,7 +1137,7 @@ function App() {
                       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
                         <div style={{display:"flex",alignItems:"center",gap:10}}>
                           <span style={{width:10,height:10,borderRadius:"50%",background:accent,flexShrink:0}}/>
-                          <span style={{fontSize:14,fontWeight:700,color:"#1e293b"}}>{cat.name}</span>
+                          <span style={{fontSize:14,fontWeight:700,color:"#1e293b"}}>{getCatName(cat.id)}</span>
                           <span style={{fontSize:11,color:"#94a3b8",background:"#fff",padding:"2px 8px",borderRadius:10,fontWeight:600}}>{catRows.length}건</span>
                         </div>
                         {DOC_TEMPLATES[cat.id] && (()=>{
@@ -1136,9 +1159,9 @@ function App() {
                           const data = catRows.map(r=>cat.fields.map(f=>cellVal(r,f,cat)));
                           const ws = XLSX.utils.aoa_to_sheet([hdr,...data]);
                           ws["!cols"] = hdr.map(h=>({wch:h.includes("내역")?30:h.includes("일")?20:h==="장소"?22:14}));
-                          XLSX.utils.book_append_sheet(wb,ws,cat.name.slice(0,31));
-                          XLSX.writeFile(wb,`${cat.name}_${new Date().toISOString().slice(0,10)}.xlsx`);
-                          notify(`${cat.name} 엑셀 다운로드 완료!`);
+                          XLSX.utils.book_append_sheet(wb,ws,getCatName(cat.id).slice(0,31));
+                          XLSX.writeFile(wb,`${getCatName(cat.id)}_${new Date().toISOString().slice(0,10)}.xlsx`);
+                          notify(`${getCatName(cat.id)} 엑셀 다운로드 완료!`);
                         }} style={{padding:"5px 12px",background:"#fff",color:"#64748b",border:"1px solid #e2e8f0",borderRadius:6,fontSize:11,fontWeight:600,fontFamily:"inherit"}}>
                           📥 엑셀
                         </button>
@@ -1315,7 +1338,17 @@ function App() {
                       const over=spent>bg&&bg>0;
                       const cnt=rows.filter(r=>r.catId===c.id).length;
                       return <tr key={c.id} style={{borderBottom:"1px solid #f0f1f3",background:idx%2===0?"#fff":"#fafafc"}}>
-                        <td style={{...S.pvTd,fontWeight:600}}>{c.name}</td>
+                        <td style={{...S.pvTd,fontWeight:600}}>
+                          {editCatName===c.id ? (
+                            <input autoFocus defaultValue={getCatName(c.id)} style={{width:"100%",padding:"4px 8px",border:"2px solid "+accent,borderRadius:5,fontSize:13,fontWeight:600,fontFamily:"inherit"}}
+                              onBlur={e=>{updateCatName(c.id,e.target.value);setEditCatName(null);}}
+                              onKeyDown={e=>{if(e.key==="Enter"){updateCatName(c.id,e.target.value);setEditCatName(null);}if(e.key==="Escape")setEditCatName(null);}}/>
+                          ) : (
+                            <span onClick={()=>setEditCatName(c.id)} style={{cursor:"pointer",borderBottom:"1px dashed #cbd5e1"}} title="클릭하여 카테고리명 수정">
+                              {getCatName(c.id)}
+                            </span>
+                          )}
+                        </td>
                         <td style={{...S.pvTd,textAlign:"right"}}>
                           {editBudget===c.id ? (
                             <input autoFocus defaultValue={bg} style={{width:130,padding:"4px 8px",border:"2px solid "+accent,borderRadius:5,fontSize:13,fontWeight:700,fontFamily:"inherit",textAlign:"right"}}
@@ -1430,7 +1463,7 @@ function App() {
                   <tbody>
                     {activeRows.map((row,idx)=>{
                       const isTab1 = discTab==="일반지출";
-                      const catLabel = isTab1 ? (ALL_CATS.find(c=>c.id===row.catId)?.name||"") : "시책업무추진비";
+                      const catLabel = isTab1 ? getCatName(row.catId) : "시책업무추진비";
                       const userName = isTab1 ? "교육위원" : "교육전문위원";
                       return (
                         <tr key={row.id} style={{borderBottom:"1px solid #f0f1f3",background:idx%2===0?"#fff":"#fafafc"}}>
