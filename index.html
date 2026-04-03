@@ -14,20 +14,45 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
-  :root{--mono:'JetBrains Mono',monospace}
+  :root{
+    --mono:'JetBrains Mono',monospace;
+    --primary:#4f46e5;--primary-light:#6366f1;--primary-bg:#eef2ff;
+    --success:#059669;--success-light:#10b981;--success-bg:#ecfdf5;
+    --warning:#d97706;--warning-bg:#fffbeb;
+    --danger:#dc2626;--danger-bg:#fef2f2;
+    --gray-50:#f8fafc;--gray-100:#f1f5f9;--gray-200:#e2e8f0;--gray-300:#cbd5e1;
+    --gray-400:#94a3b8;--gray-500:#64748b;--gray-600:#475569;--gray-700:#334155;
+    --gray-800:#1e293b;--gray-900:#0f172a;
+    --radius-sm:6px;--radius-md:10px;--radius-lg:14px;--radius-xl:18px;
+    --shadow-sm:0 1px 3px rgba(0,0,0,.06);
+    --shadow-md:0 4px 12px rgba(0,0,0,.08);
+    --shadow-lg:0 8px 28px rgba(0,0,0,.12);
+    --shadow-xl:0 16px 48px rgba(0,0,0,.14);
+    --transition-fast:.15s cubic-bezier(.4,0,.2,1);
+    --transition-normal:.25s cubic-bezier(.4,0,.2,1);
+    --transition-slow:.35s cubic-bezier(.4,0,.2,1);
+  }
   *{box-sizing:border-box;margin:0;padding:0}
-  body{background:#f0f2f7;font-family:'Pretendard','Apple SD Gothic Neo','Malgun Gothic',sans-serif;color:#0f172a;font-size:13px;-webkit-font-smoothing:antialiased}
-  @keyframes fadeUp{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+  body{background:linear-gradient(135deg,#eef1f8 0%,#e8ecf4 50%,#f0f2f7 100%);font-family:'Pretendard','Apple SD Gothic Neo','Malgun Gothic',sans-serif;color:var(--gray-900);font-size:13px;-webkit-font-smoothing:antialiased;min-height:100vh}
+  @keyframes fadeUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
   @keyframes fadeIn{from{opacity:0}to{opacity:1}}
-  input:focus,select:focus,textarea:focus{outline:none;border-color:#4f46e5!important;box-shadow:0 0 0 3px rgba(79,70,229,.1)}
-  button{cursor:pointer;transition:all .1s;font-family:inherit}
-  button:hover:not(:disabled){filter:brightness(1.05)}
-  button:active:not(:disabled){transform:scale(.98)}
-  button:disabled{opacity:.4;cursor:not-allowed}
+  @keyframes slideIn{from{opacity:0;transform:translateX(-8px)}to{opacity:1;transform:translateX(0)}}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.6}}
+  @keyframes shimmer{0%{background-position:-200% 0}100%{background-position:200% 0}}
+  @keyframes scaleIn{from{opacity:0;transform:scale(.95)}to{opacity:1;transform:scale(1)}}
+  input:focus,select:focus,textarea:focus{outline:none;border-color:var(--primary)!important;box-shadow:0 0 0 3px rgba(79,70,229,.12)}
+  button{cursor:pointer;transition:all var(--transition-fast);font-family:inherit;-webkit-tap-highlight-color:transparent}
+  button:hover:not(:disabled){filter:brightness(1.04);transform:translateY(-0.5px)}
+  button:active:not(:disabled){transform:translateY(0) scale(.98)}
+  button:disabled{opacity:.4;cursor:not-allowed;transform:none!important;filter:none!important}
   select{font-family:inherit;cursor:pointer}
   input{font-family:inherit}
-  ::-webkit-scrollbar{width:5px;height:5px}
-  ::-webkit-scrollbar-thumb{background:#d1d5db;border-radius:3px}
+  ::-webkit-scrollbar{width:6px;height:6px}
+  ::-webkit-scrollbar-track{background:transparent}
+  ::-webkit-scrollbar-thumb{background:var(--gray-300);border-radius:3px}
+  ::-webkit-scrollbar-thumb:hover{background:var(--gray-400)}
+  table tr{transition:background var(--transition-fast)}
+  ::selection{background:rgba(79,70,229,.15);color:var(--gray-900)}
 </style>
 </head>
 <body>
@@ -660,8 +685,9 @@ function App() {
     notify("정보공개 엑셀 다운로드 완료!");
   };
 
-  if(loading) return React.createElement("div",{style:{display:"flex",alignItems:"center",justifyContent:"center",height:"100vh"}},
-    React.createElement("p",{style:{color:"#94a3b8",fontSize:15}},"불러오는 중..."));
+  if(loading) return React.createElement("div",{style:{display:"flex",alignItems:"center",justifyContent:"center",height:"100vh",flexDirection:"column",gap:16}},
+    React.createElement("div",{style:{width:48,height:48,borderRadius:14,background:"linear-gradient(135deg,#6366f1,#10b981)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:22,fontWeight:900,color:"#fff",animation:"pulse 1.5s infinite"}}, "₩"),
+    React.createElement("p",{style:{color:"var(--gray-400)",fontSize:14,fontWeight:500}},"불러오는 중..."));
 
   // Preset creation form component
   const PresetCreator = () => {
@@ -773,31 +799,34 @@ function App() {
 
   // Preset selection screen
   if(!presetName) return (
-    <div style={{display:"flex",alignItems:"center",justifyContent:"center",minHeight:"100vh",background:"#f0f2f7",padding:20}}>
-      <div style={{background:"#fff",borderRadius:20,padding:"48px 40px",maxWidth:480,width:"100%",boxShadow:"0 8px 32px rgba(0,0,0,.08)"}}>
+    <div style={{display:"flex",alignItems:"center",justifyContent:"center",minHeight:"100vh",background:"linear-gradient(135deg,#eef1f8 0%,#e0e7ff 50%,#ecfdf5 100%)",padding:20}}>
+      <div style={{background:"rgba(255,255,255,.92)",backdropFilter:"blur(20px)",borderRadius:24,padding:"52px 44px",maxWidth:480,width:"100%",boxShadow:"0 12px 48px rgba(0,0,0,.1),0 2px 8px rgba(0,0,0,.04)",animation:"scaleIn .35s ease"}}>
         {setupMode === "create" ? <PresetCreator /> : (<div style={{textAlign:"center"}}>
-          <div style={{width:56,height:56,borderRadius:14,background:"linear-gradient(135deg,#6366f1,#10b981)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:28,fontWeight:900,color:"#fff",margin:"0 auto 20px"}}>₩</div>
-          <h1 style={{fontSize:22,fontWeight:800,marginBottom:6,letterSpacing:"-0.5px"}}>지출관리</h1>
-          <p style={{fontSize:13,color:"#94a3b8",marginBottom:28}}>사용할 과(부서)를 선택하세요</p>
+          <div style={{width:64,height:64,borderRadius:18,background:"linear-gradient(135deg,#6366f1,#10b981)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:30,fontWeight:900,color:"#fff",margin:"0 auto 22px",boxShadow:"0 8px 24px rgba(99,102,241,.25)"}}>₩</div>
+          <h1 style={{fontSize:24,fontWeight:800,marginBottom:6,letterSpacing:"-0.5px",color:"var(--gray-900)"}}>지출관리</h1>
+          <p style={{fontSize:14,color:"var(--gray-400)",marginBottom:32,fontWeight:500}}>사용할 과(부서)를 선택하세요</p>
           <div style={{display:"flex",flexDirection:"column",gap:10}}>
             {getAllPresetNames().map(name=>(
               <button key={name} onClick={()=>selectPreset(name)}
-                style={{padding:"16px 20px",border:"2px solid #e2e8f0",borderRadius:12,background:"#fff",fontSize:15,fontWeight:600,
-                  fontFamily:"inherit",color:"#1e293b",cursor:"pointer",transition:"all .15s"}}
-                onMouseEnter={e=>{e.currentTarget.style.borderColor="#6366f1";e.currentTarget.style.background="#f5f3ff";}}
-                onMouseLeave={e=>{e.currentTarget.style.borderColor="#e2e8f0";e.currentTarget.style.background="#fff";}}>
+                style={{padding:"18px 22px",border:"2px solid var(--gray-200)",borderRadius:"var(--radius-lg)",background:"#fff",fontSize:15,fontWeight:600,
+                  fontFamily:"inherit",color:"var(--gray-800)",cursor:"pointer",transition:"all var(--transition-fast)",boxShadow:"var(--shadow-sm)",
+                  display:"flex",alignItems:"center",gap:12}}
+                onMouseEnter={e=>{e.currentTarget.style.borderColor="var(--primary-light)";e.currentTarget.style.background="var(--primary-bg)";e.currentTarget.style.transform="translateY(-1px)";e.currentTarget.style.boxShadow="var(--shadow-md)";}}
+                onMouseLeave={e=>{e.currentTarget.style.borderColor="var(--gray-200)";e.currentTarget.style.background="#fff";e.currentTarget.style.transform="none";e.currentTarget.style.boxShadow="var(--shadow-sm)";}}>
+                <span style={{width:36,height:36,borderRadius:10,background:"linear-gradient(135deg,#eef2ff,#e0e7ff)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:16,flexShrink:0}}>🏛️</span>
                 {name}
               </button>
             ))}
             <button onClick={()=>setSetupMode("create")}
-              style={{padding:"16px 20px",border:"2px dashed #cbd5e1",borderRadius:12,background:"#fafbfc",fontSize:15,fontWeight:600,
-                fontFamily:"inherit",color:"#94a3b8",cursor:"pointer",transition:"all .15s"}}
-              onMouseEnter={e=>{e.currentTarget.style.borderColor="#6366f1";e.currentTarget.style.color="#6366f1";}}
-              onMouseLeave={e=>{e.currentTarget.style.borderColor="#cbd5e1";e.currentTarget.style.color="#94a3b8";}}>
+              style={{padding:"18px 22px",border:"2px dashed var(--gray-300)",borderRadius:"var(--radius-lg)",background:"var(--gray-50)",fontSize:15,fontWeight:600,
+                fontFamily:"inherit",color:"var(--gray-400)",cursor:"pointer",transition:"all var(--transition-fast)",
+                display:"flex",alignItems:"center",gap:12,justifyContent:"center"}}
+              onMouseEnter={e=>{e.currentTarget.style.borderColor="var(--primary-light)";e.currentTarget.style.color="var(--primary)";e.currentTarget.style.background="var(--primary-bg)";}}
+              onMouseLeave={e=>{e.currentTarget.style.borderColor="var(--gray-300)";e.currentTarget.style.color="var(--gray-400)";e.currentTarget.style.background="var(--gray-50)";}}>
               + 새 과(부서) 추가
             </button>
           </div>
-          <p style={{fontSize:11,color:"#cbd5e1",marginTop:24}}>선택 후 자동으로 기억됩니다</p>
+          <p style={{fontSize:11,color:"var(--gray-300)",marginTop:28,fontWeight:500}}>선택 후 자동으로 기억됩니다</p>
         </div>)}
       </div>
     </div>
@@ -885,44 +914,55 @@ function App() {
 
   return (
     <div style={S.wrap}>
-      {toast&&<div style={{position:"fixed",top:16,right:16,padding:"10px 18px",borderRadius:10,fontSize:13,fontWeight:600,zIndex:999,
+      {toast&&<div style={{position:"fixed",top:20,right:20,padding:"12px 20px",borderRadius:"var(--radius-md)",fontSize:13,fontWeight:600,zIndex:1100,
         background:toast.type==="ok"?"#f0fdf4":"#fef2f2",color:toast.type==="ok"?"#16a34a":"#dc2626",
-        borderLeft:`4px solid ${toast.type==="ok"?"#16a34a":"#dc2626"}`,boxShadow:"0 4px 16px rgba(0,0,0,.08)",animation:"fadeIn .25s"
-      }}>{toast.type==="ok"?"✓":"⚠"} {toast.msg}</div>}
+        borderLeft:`4px solid ${toast.type==="ok"?"#16a34a":"#dc2626"}`,boxShadow:"var(--shadow-lg)",animation:"scaleIn .25s ease",
+        display:"flex",alignItems:"center",gap:8,backdropFilter:"blur(8px)"
+      }}><span style={{fontSize:15}}>{toast.type==="ok"?"✓":"⚠"}</span> {toast.msg}</div>}
 
       {/* Sidebar overlay */}
-      {sideOpen && <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,.35)",zIndex:998}} onClick={()=>setSideOpen(false)}/>}
+      {sideOpen && <div style={{position:"fixed",inset:0,background:"rgba(15,23,42,.45)",backdropFilter:"blur(4px)",zIndex:998,animation:"fadeIn .2s"}} onClick={()=>setSideOpen(false)}/>}
 
       {/* Sidebar */}
-      <nav style={{...S.nav,position:"fixed",left:sideOpen?0:-240,zIndex:999,width:240,transition:"left .25s ease",boxShadow:sideOpen?"4px 0 24px rgba(0,0,0,.2)":"none"}}>
-        <div style={{padding:"14px 14px 16px",borderBottom:"1px solid rgba(255,255,255,.06)"}}>
-          <div style={{display:"flex",alignItems:"center",gap:8,justifyContent:"space-between"}}>
-            <div style={{display:"flex",alignItems:"center",gap:8}}>
-              <div style={{width:26,height:26,borderRadius:7,background:"linear-gradient(135deg,#6366f1,#10b981)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:13,fontWeight:900,color:"#fff"}}>₩</div>
-              <span style={{fontSize:15,fontWeight:800,color:"#fff",letterSpacing:"-0.3px"}}>지출관리</span>
+      <nav style={{...S.nav,position:"fixed",left:sideOpen?0:-260,zIndex:999,width:260,transition:"left var(--transition-normal)",boxShadow:sideOpen?"8px 0 40px rgba(0,0,0,.25)":"none"}}>
+        <div style={{padding:"18px 18px 14px",borderBottom:"1px solid rgba(255,255,255,.08)"}}>
+          <div style={{display:"flex",alignItems:"center",gap:10,justifyContent:"space-between"}}>
+            <div style={{display:"flex",alignItems:"center",gap:10}}>
+              <div style={{width:32,height:32,borderRadius:10,background:"linear-gradient(135deg,#6366f1,#10b981)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:15,fontWeight:900,color:"#fff",boxShadow:"0 2px 8px rgba(99,102,241,.3)"}}>₩</div>
+              <div>
+                <div style={{fontSize:15,fontWeight:800,color:"#fff",letterSpacing:"-0.3px",lineHeight:1.2}}>지출관리</div>
+                <div style={{fontSize:10,color:"rgba(255,255,255,.4)",fontWeight:500}}>Expense Manager</div>
+              </div>
             </div>
-            <button onClick={()=>setSideOpen(false)} style={{border:"none",background:"none",color:"#64748b",fontSize:18,padding:"2px 6px",cursor:"pointer"}}>✕</button>
+            <button onClick={()=>setSideOpen(false)} style={{border:"none",background:"rgba(255,255,255,.08)",color:"#94a3b8",fontSize:14,padding:"6px 8px",cursor:"pointer",borderRadius:6,transition:"all var(--transition-fast)"}}
+              onMouseEnter={e=>{e.currentTarget.style.background="rgba(255,255,255,.15)";e.currentTarget.style.color="#fff";}}
+              onMouseLeave={e=>{e.currentTarget.style.background="rgba(255,255,255,.08)";e.currentTarget.style.color="#94a3b8";}}>✕</button>
           </div>
         </div>
-        <div style={{padding:"10px 12px",fontSize:14,color:"#fff",fontWeight:800,textAlign:"center",background:"linear-gradient(135deg,#6366f1,#4f46e5)",borderRadius:8,margin:"8px 8px 4px",letterSpacing:"-0.3px"}}>
+        <div style={{padding:"12px 14px",fontSize:13,color:"#fff",fontWeight:700,textAlign:"center",background:"linear-gradient(135deg,#6366f1 0%,#4f46e5 100%)",borderRadius:10,margin:"12px 12px 8px",letterSpacing:"-0.2px",boxShadow:"0 2px 10px rgba(79,70,229,.3)"}}>
           {presetName}
         </div>
-        <div style={{padding:"6px 8px",flex:1}}>
-          {[["home","📊","대시보드"],["history","📋","사용내역 분류"],["preview","📑","사용내역 보기"],["budget","💰","예산관리"],["disclosure","📊","정보공개"]].map(([id,ic,lb])=>(
-            <button key={id} onClick={()=>{setView(id);setSideOpen(false);setSelected(new Set());setDocSelected(new Set());setFilterTab("미분류");setFilterMonth("all");setSearchText("");}}
-              style={{...S.nb,...((view===id||(view==="classify"&&id==="upload"))?S.nbA:{})}}>
-              <span style={{fontSize:14}}>{ic}</span><span>{lb}</span>
-            </button>
-          ))}
+        <div style={{padding:"8px 10px",flex:1}}>
+          <div style={{fontSize:9,fontWeight:700,color:"rgba(255,255,255,.25)",textTransform:"uppercase",letterSpacing:"1.5px",padding:"8px 12px 4px"}}>메뉴</div>
+          {[["home","📊","대시보드"],["history","📋","사용내역 분류"],["preview","📑","사용내역 보기"],["budget","💰","예산관리"],["disclosure","📊","정보공개"]].map(([id,ic,lb])=>{
+            const isActive = view===id||(view==="classify"&&id==="history");
+            return <button key={id} onClick={()=>{setView(id);setSideOpen(false);setSelected(new Set());setDocSelected(new Set());setFilterTab("미분류");setFilterMonth("all");setSearchText("");}}
+              style={{...S.nb,...(isActive?S.nbA:{}),position:"relative",overflow:"hidden"}}>
+              {isActive && <span style={{position:"absolute",left:0,top:"20%",height:"60%",width:3,background:"#6366f1",borderRadius:"0 3px 3px 0"}}/>}
+              <span style={{fontSize:15,width:22,textAlign:"center"}}>{ic}</span><span style={{fontSize:13}}>{lb}</span>
+            </button>;
+          })}
         </div>
-        <div style={{padding:"6px 8px",borderTop:"1px solid rgba(255,255,255,.06)",display:"flex",flexDirection:"column",gap:1}}>
-          <button style={S.nb} onClick={()=>{setView("upload");setSideOpen(false);}}>
-            <span style={{fontSize:14}}>📤</span><span>업로드</span>
+        <div style={{padding:"8px 10px",borderTop:"1px solid rgba(255,255,255,.06)",display:"flex",flexDirection:"column",gap:2}}>
+          <div style={{fontSize:9,fontWeight:700,color:"rgba(255,255,255,.25)",textTransform:"uppercase",letterSpacing:"1.5px",padding:"8px 12px 4px"}}>도구</div>
+          <button style={{...S.nb,...(view==="upload"?S.nbA:{})}} onClick={()=>{setView("upload");setSideOpen(false);}}>
+            <span style={{fontSize:15,width:22,textAlign:"center"}}>📤</span><span style={{fontSize:13}}>업로드</span>
           </button>
           <button style={S.ns} onClick={exportXLSX} disabled={!rows.length}>📥 엑셀 내보내기</button>
           <button style={S.ns} onClick={saveToFile} disabled={!rows.length}>💾 파일 백업</button>
           <button style={S.ns} onClick={()=>jsonRef.current?.click()}>📂 백업 불러오기</button>
           <input ref={jsonRef} type="file" accept=".json" style={{display:"none"}} onChange={e=>{loadFromFile(e.target.files[0]);e.target.value="";}}/>
+          <div style={{height:1,background:"rgba(255,255,255,.06)",margin:"4px 12px"}}/>
           <button style={{...S.ns,color:"#f87171"}} onClick={resetAll}>🗑️ 초기화</button>
           <button style={{...S.ns,color:"#94a3b8"}} onClick={()=>{if(confirm("과(부서)를 변경하시겠습니까?\n현재 과의 데이터는 보존됩니다.")){savePresetChoice("");setPresetName("");setLoading(false);}}}>🔄 과 변경</button>
         </div>
@@ -930,44 +970,69 @@ function App() {
 
       <main style={{...S.main,width:"100%"}}>
         {/* Top bar with hamburger */}
-        <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:14}}>
-          <button onClick={()=>setSideOpen(true)} style={{border:"none",background:"#0f172a",color:"#fff",borderRadius:8,padding:"8px 10px",fontSize:16,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",lineHeight:1}}>
-            <span style={{fontSize:18}}>☰</span>
+        <div style={{display:"flex",alignItems:"center",gap:14,marginBottom:20,padding:"12px 16px",background:"#fff",borderRadius:"var(--radius-lg)",
+          boxShadow:"var(--shadow-sm)",border:"1px solid rgba(226,232,240,.6)",position:"sticky",top:8,zIndex:100,backdropFilter:"blur(12px)",
+          background:"rgba(255,255,255,.88)"}}>
+          <button onClick={()=>setSideOpen(true)} style={{border:"none",background:"linear-gradient(135deg,#1e1b4b,#312e81)",color:"#fff",borderRadius:"var(--radius-md)",
+            padding:"9px 11px",fontSize:16,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",lineHeight:1,
+            boxShadow:"0 2px 8px rgba(30,27,75,.25)"}}>
+            <span style={{fontSize:17,lineHeight:1}}>☰</span>
           </button>
-          <div style={{display:"flex",alignItems:"center",gap:8}}>
-            <div style={{width:22,height:22,borderRadius:6,background:"linear-gradient(135deg,#6366f1,#10b981)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,fontWeight:900,color:"#fff"}}>₩</div>
-            <span style={{fontSize:14,fontWeight:700,color:"#1e293b"}}>{presetName}</span>
+          <div style={{width:1,height:24,background:"var(--gray-200)",flexShrink:0}}/>
+          <div style={{display:"flex",alignItems:"center",gap:10,flex:1,minWidth:0}}>
+            <div style={{width:26,height:26,borderRadius:8,background:"linear-gradient(135deg,#6366f1,#10b981)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:12,fontWeight:900,color:"#fff",flexShrink:0}}>₩</div>
+            <div style={{minWidth:0}}>
+              <div style={{fontSize:10,color:"var(--gray-400)",fontWeight:600,lineHeight:1.2,letterSpacing:"0.3px"}}>{presetName}</div>
+              <div style={{fontSize:14,fontWeight:800,color:"var(--gray-900)",letterSpacing:"-0.3px",lineHeight:1.3}}>
+                {{"home":"대시보드","upload":"파일 업로드","classify":"새 내역 분류","history":"사용내역 분류","preview":"사용내역 보기","budget":"예산관리","disclosure":"정보공개"}[view]||""}
+              </div>
+            </div>
           </div>
+          {rows.length > 0 && <div style={{display:"flex",gap:6,flexShrink:0}}>
+            <div style={{padding:"5px 12px",background:st.undo?"var(--warning-bg)":"var(--success-bg)",borderRadius:20,fontSize:11,fontWeight:700,
+              color:st.undo?"#92400e":"#047857",display:"flex",alignItems:"center",gap:4}}>
+              <span style={{width:6,height:6,borderRadius:"50%",background:st.undo?"#d97706":"#10b981"}}/>
+              {st.undo ? `미분류 ${st.undo}건` : "분류 완료"}
+            </div>
+          </div>}
         </div>
         {/* HOME */}
-        {view==="home"&&<div style={{animation:"fadeUp .35s ease"}}>
-          <h1 style={S.pt}>대시보드</h1><p style={S.pd}>지출 현황을 한눈에 확인하세요</p>
+        {view==="home"&&<div style={{animation:"fadeUp var(--transition-slow) ease"}}>
           {!rows.length ? (
-            <div style={S.empty}>
-              <div style={{fontSize:52,marginBottom:14}}>📂</div>
-              <h3 style={{fontSize:17,fontWeight:700,color:"#334155",marginBottom:6}}>아직 데이터가 없습니다</h3>
-              <p style={{color:"#94a3b8",marginBottom:20,fontSize:13}}>사용내역조회 CSV 또는 엑셀 파일을 업로드하여 시작하세요</p>
-              <button style={S.pri} onClick={()=>setView("upload")}>📤 파일 업로드</button>
+            <div style={{...S.empty,padding:"64px 32px",borderRadius:"var(--radius-xl)",background:"linear-gradient(180deg,#fff 0%,#f8fafc 100%)",boxShadow:"var(--shadow-md)"}}>
+              <div style={{width:80,height:80,borderRadius:20,background:"linear-gradient(135deg,#eef2ff,#e0e7ff)",display:"flex",alignItems:"center",justifyContent:"center",margin:"0 auto 20px",fontSize:38}}>📂</div>
+              <h3 style={{fontSize:18,fontWeight:800,color:"var(--gray-800)",marginBottom:8,letterSpacing:"-0.3px"}}>아직 데이터가 없습니다</h3>
+              <p style={{color:"var(--gray-400)",marginBottom:24,fontSize:14,lineHeight:1.6}}>사용내역조회 CSV 또는 엑셀 파일을<br/>업로드하여 시작하세요</p>
+              <button style={{...S.pri,padding:"12px 28px",fontSize:14,borderRadius:"var(--radius-md)"}} onClick={()=>setView("upload")}>📤 파일 업로드</button>
             </div>
           ) : (<>
-            <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:10,marginBottom:16}}>
+            <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:14,marginBottom:20}}>
               {[
-                {lb:"총 지출액",v:`${fmt(st.amt)}`,sub:`${st.total}건`,bg:"linear-gradient(135deg,#1e1b4b,#312e81)",click:null},
-                {lb:"일반지출",v:`${fmt(st.gAmt)}`,sub:`${st.gCnt}건`,bg:"linear-gradient(135deg,#1e3a5f,#1d4ed8)",click:()=>{setPreviewTab("일반지출");setPreviewCat("all");setView("preview");}},
-                {lb:"일상경비",v:`${fmt(st.dAmt)}`,sub:`${st.dCnt}건`,bg:"linear-gradient(135deg,#064e3b,#059669)",click:()=>{setPreviewTab("일상경비");setPreviewCat("all");setView("preview");}},
-                {lb:"미분류",v:`${st.undo}건`,sub:st.undo?"분류 필요":"완료!",bg:st.undo?"linear-gradient(135deg,#78350f,#b45309)":"linear-gradient(135deg,#374151,#4b5563)",click:st.undo?()=>{setFilterTab("미분류");setView("history");}:null},
+                {lb:"총 지출액",v:`${fmt(st.amt)}`,sub:`${st.total}건`,bg:"linear-gradient(135deg,#1e1b4b 0%,#312e81 50%,#3730a3 100%)",icon:"💳",click:null},
+                {lb:"일반지출",v:`${fmt(st.gAmt)}`,sub:`${st.gCnt}건`,bg:"linear-gradient(135deg,#1e3a5f 0%,#1d4ed8 100%)",icon:"📘",click:()=>{setPreviewTab("일반지출");setPreviewCat("all");setView("preview");}},
+                {lb:"일상경비",v:`${fmt(st.dAmt)}`,sub:`${st.dCnt}건`,bg:"linear-gradient(135deg,#064e3b 0%,#059669 100%)",icon:"📗",click:()=>{setPreviewTab("일상경비");setPreviewCat("all");setView("preview");}},
+                {lb:"미분류",v:`${st.undo}건`,sub:st.undo?"분류 필요":"완료!",bg:st.undo?"linear-gradient(135deg,#78350f 0%,#b45309 100%)":"linear-gradient(135deg,#374151 0%,#4b5563 100%)",icon:st.undo?"⚡":"✅",click:st.undo?()=>{setFilterTab("미분류");setView("history");}:null},
               ].map((c,i)=>(
-                <div key={i} onClick={c.click} style={{padding:"14px 16px",borderRadius:10,color:"#fff",background:c.bg,cursor:c.click?"pointer":"default",transition:"transform .1s"}}
-                  onMouseEnter={e=>{if(c.click)e.currentTarget.style.transform="translateY(-1px)"}} onMouseLeave={e=>{e.currentTarget.style.transform="none"}}>
-                  <div style={{fontSize:10,fontWeight:500,opacity:.75,marginBottom:6}}>{c.lb}{c.click?" →":""}</div>
-                  <div style={{fontFamily:"var(--mono)",fontSize:18,fontWeight:800,letterSpacing:"-0.5px"}}>{c.v}{i<3&&<span style={{fontSize:11,fontWeight:500,opacity:.6,marginLeft:2}}>원</span>}</div>
-                  <div style={{fontSize:10,opacity:.55,marginTop:2}}>{c.sub}</div>
+                <div key={i} onClick={c.click} style={{padding:"18px 20px",borderRadius:"var(--radius-lg)",color:"#fff",background:c.bg,cursor:c.click?"pointer":"default",
+                  transition:"all var(--transition-fast)",boxShadow:"0 4px 16px rgba(0,0,0,.15)",position:"relative",overflow:"hidden"}}
+                  onMouseEnter={e=>{if(c.click){e.currentTarget.style.transform="translateY(-3px)";e.currentTarget.style.boxShadow="0 8px 24px rgba(0,0,0,.2)";}}}
+                  onMouseLeave={e=>{e.currentTarget.style.transform="none";e.currentTarget.style.boxShadow="0 4px 16px rgba(0,0,0,.15)";}}>
+                  <div style={{position:"absolute",top:-8,right:-8,fontSize:40,opacity:.08}}>{c.icon}</div>
+                  <div style={{fontSize:10.5,fontWeight:600,opacity:.7,marginBottom:8,display:"flex",alignItems:"center",gap:5}}>
+                    {c.lb}{c.click&&<span style={{fontSize:14,opacity:.5}}>→</span>}
+                  </div>
+                  <div style={{fontFamily:"var(--mono)",fontSize:20,fontWeight:800,letterSpacing:"-0.5px",lineHeight:1.1}}>{c.v}{i<3&&<span style={{fontSize:11,fontWeight:500,opacity:.5,marginLeft:3}}>원</span>}</div>
+                  <div style={{fontSize:10.5,opacity:.45,marginTop:4,fontWeight:500}}>{c.sub}</div>
                 </div>
               ))}
             </div>
 
-            <div style={S.sec}>
-              <h2 style={S.st}>카테고리별 예산 현황</h2>
+            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:16,marginBottom:16}}>
+              <div style={{...S.sec,borderRadius:"var(--radius-lg)",boxShadow:"var(--shadow-sm)"}}>
+                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
+                  <h2 style={{...S.st,marginBottom:0,fontSize:14}}>카테고리별 예산 현황</h2>
+                  <button style={{border:"none",background:"none",color:"var(--primary-light)",fontSize:12,fontWeight:600,padding:"2px 4px"}} onClick={()=>setView("budget")}>상세 →</button>
+                </div>
               {ALL_CATS.map(cat=>{
                 const cr=rows.filter(r=>r.catId===cat.id);
                 const bg=budgets[cat.id]||0;
@@ -976,59 +1041,70 @@ function App() {
                 const pct=bg>0?Math.min((spent/bg)*100,100):0;
                 const over=spent>bg&&bg>0;
                 const ac=cat.tab==="일반지출"?"#3b82f6":"#10b981";
-                return <div key={cat.id} style={{padding:"10px 0",borderBottom:"1px solid #f5f6fa"}}>
+                return <div key={cat.id} style={{padding:"8px 0",borderBottom:"1px solid var(--gray-100)"}}>
                   <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:4}}>
                     <div style={{display:"flex",alignItems:"center",gap:8}}>
                       <span style={{width:7,height:7,borderRadius:"50%",background:ac,flexShrink:0}}/>
-                      <span style={{fontSize:13,fontWeight:500}}>{getCatName(cat.id)}</span>
-                      <span style={{fontSize:10.5,color:"#94a3b8",background:"#f1f5f9",padding:"1px 6px",borderRadius:4}}>{cr.length}건</span>
+                      <span style={{fontSize:12.5,fontWeight:500,color:"var(--gray-700)"}}>{getCatName(cat.id)}</span>
+                      <span style={{fontSize:10,color:"var(--gray-400)",background:"var(--gray-50)",padding:"1px 6px",borderRadius:4,fontWeight:600}}>{cr.length}건</span>
                     </div>
-                    <div style={{display:"flex",gap:10,alignItems:"baseline"}}>
-                      <span style={{fontFamily:"var(--mono)",fontSize:12,fontWeight:700,color:over?"#ef4444":"#1e293b",fontVariantNumeric:"tabular-nums"}}>{fmt(spent)}</span>
-                      <span style={{fontFamily:"var(--mono)",fontSize:11,color:"#94a3b8"}}>/ {fmt(bg)}원</span>
+                    <div style={{display:"flex",gap:8,alignItems:"baseline"}}>
+                      <span style={{fontFamily:"var(--mono)",fontSize:11.5,fontWeight:700,color:over?"#ef4444":"var(--gray-800)",fontVariantNumeric:"tabular-nums"}}>{fmt(spent)}</span>
+                      <span style={{fontFamily:"var(--mono)",fontSize:10.5,color:"var(--gray-400)"}}>/ {fmt(bg)}</span>
                     </div>
                   </div>
-                  {bg>0&&<div style={{height:4,background:"#e2e8f0",borderRadius:2,overflow:"hidden"}}>
-                    <div style={{height:"100%",width:pct+"%",background:over?"#ef4444":pct>80?"#f59e0b":ac,borderRadius:2,transition:"width .4s"}}/>
+                  {bg>0&&<div style={{height:4,background:"var(--gray-200)",borderRadius:2,overflow:"hidden"}}>
+                    <div style={{height:"100%",width:pct+"%",background:over?"#ef4444":pct>80?"#f59e0b":ac,borderRadius:2,transition:"width .5s ease"}}/>
                   </div>}
                 </div>;
               })}
-            </div>
-
-            <div style={S.sec}>
-              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-                <h2 style={S.st}>최근 내역</h2>
-                <button style={{border:"none",background:"none",color:"#6366f1",fontSize:13,fontWeight:600}} onClick={()=>setView("history")}>사용내역 분류 →</button>
               </div>
-              {rows.slice(0,5).map(r=>(
-                <div key={r.id} style={{display:"flex",alignItems:"center",gap:12,padding:"11px 0",borderBottom:"1px solid #f8fafc"}}>
-                  <div style={{flex:1}}><div style={{fontSize:13.5,fontWeight:600}}>{r.place}</div><div style={{fontSize:11.5,color:"#94a3b8"}}>{r.date}</div></div>
-                  <div style={{fontSize:13,fontFamily:"var(--mono)",fontWeight:700,fontVariantNumeric:"tabular-nums",whiteSpace:"nowrap"}}>{fmt(r.amount)}원</div>
-                  <TabBadge tab={r.tab}/>
+
+              <div style={{...S.sec,borderRadius:"var(--radius-lg)",boxShadow:"var(--shadow-sm)"}}>
+                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
+                  <h2 style={{...S.st,marginBottom:0,fontSize:14}}>최근 내역</h2>
+                  <button style={{border:"none",background:"none",color:"var(--primary-light)",fontSize:12,fontWeight:600,padding:"2px 4px"}} onClick={()=>setView("history")}>전체보기 →</button>
+                </div>
+              {rows.slice(0,7).map((r,i)=>(
+                <div key={r.id} style={{display:"flex",alignItems:"center",gap:12,padding:"9px 0",borderBottom:i<6?"1px solid var(--gray-50)":"none",
+                  animation:`slideIn ${.15+i*.04}s ease`}}>
+                  <div style={{width:32,height:32,borderRadius:8,background:r.tab==="일반지출"?"#eff6ff":r.tab==="일상경비"?"#ecfdf5":"var(--gray-50)",
+                    display:"flex",alignItems:"center",justifyContent:"center",fontSize:13,flexShrink:0}}>
+                    {r.tab==="일반지출"?"📘":r.tab==="일상경비"?"📗":"📋"}
+                  </div>
+                  <div style={{flex:1,minWidth:0}}>
+                    <div style={{fontSize:13,fontWeight:600,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{r.place}</div>
+                    <div style={{fontSize:11,color:"var(--gray-400)"}}>{r.date?.split(" ")[0]}</div>
+                  </div>
+                  <div style={{fontSize:12.5,fontFamily:"var(--mono)",fontWeight:700,fontVariantNumeric:"tabular-nums",whiteSpace:"nowrap",color:"var(--gray-800)"}}>{fmt(r.amount)}<span style={{fontSize:10,color:"var(--gray-400)",fontWeight:500}}>원</span></div>
                 </div>
               ))}
+              </div>
             </div>
           </>)}
         </div>}
 
         {/* UPLOAD */}
-        {view==="upload"&&<div style={{animation:"fadeUp .35s ease"}}>
-          <h1 style={S.pt}>파일 업로드</h1><p style={S.pd}>사용내역조회 CSV 또는 엑셀 파일을 업로드하면 기존 데이터에 추가됩니다</p>
-          <div style={{...S.drop,...(dragOver?S.dropA:{})}}
+        {view==="upload"&&<div style={{animation:"fadeUp var(--transition-slow) ease"}}>
+          <div style={{...S.drop,...(dragOver?S.dropA:{}),borderRadius:"var(--radius-xl)",padding:"56px 32px",background:dragOver?"linear-gradient(180deg,#f5f3ff,#eef2ff)":"linear-gradient(180deg,#fff 0%,#fafafc 100%)",
+            border:dragOver?"2px dashed var(--primary)":"2px dashed var(--gray-300)",boxShadow:dragOver?"0 0 0 4px rgba(79,70,229,.08)":"var(--shadow-sm)",transition:"all var(--transition-normal)"}}
             onDragOver={e=>{e.preventDefault();setDragOver(true)}} onDragLeave={()=>setDragOver(false)}
             onDrop={e=>{e.preventDefault();setDragOver(false);handleFile(e.dataTransfer.files[0])}}
             onClick={()=>fRef.current?.click()}>
             <input ref={fRef} type="file" accept=".csv,.xlsx,.xls" style={{display:"none"}} onChange={e=>{handleFile(e.target.files[0]);e.target.value="";}}/>
-            <div style={{fontSize:46,marginBottom:14}}>📄</div>
-            <p style={{fontSize:16,fontWeight:700,color:"#334155",marginBottom:4}}>CSV 또는 엑셀 파일을 드래그하세요</p>
-            <p style={{fontSize:13,color:"#94a3b8",marginBottom:18}}>또는 클릭하여 선택</p>
+            <div style={{width:72,height:72,borderRadius:18,background:"linear-gradient(135deg,#eef2ff,#e0e7ff)",display:"flex",alignItems:"center",justifyContent:"center",
+              margin:"0 auto 18px",fontSize:32,boxShadow:"0 4px 12px rgba(99,102,241,.1)"}}>📄</div>
+            <p style={{fontSize:17,fontWeight:700,color:"var(--gray-700)",marginBottom:6}}>CSV 또는 엑셀 파일을 드래그하세요</p>
+            <p style={{fontSize:13,color:"var(--gray-400)",marginBottom:22}}>또는 클릭하여 선택</p>
             <div style={{display:"flex",justifyContent:"center",gap:8,alignItems:"center"}}>
-              {["승인일시","금액","가맹점명"].map(c=><span key={c} style={{padding:"3px 12px",background:"#f0f0ff",color:"#6366f1",borderRadius:20,fontSize:12,fontWeight:600}}>{c}</span>)}
-              <span style={{fontSize:11.5,color:"#94a3b8"}}>자동 추출</span>
+              {["승인일시","금액","가맹점명"].map(c=><span key={c} style={{padding:"4px 14px",background:"var(--primary-bg)",color:"var(--primary)",borderRadius:20,fontSize:12,fontWeight:600,
+                border:"1px solid rgba(99,102,241,.15)"}}>{c}</span>)}
+              <span style={{fontSize:11.5,color:"var(--gray-400)",fontWeight:500}}>자동 추출</span>
             </div>
           </div>
-          {rows.length>0&&<div style={{marginTop:14,padding:"12px 16px",background:"#fffbeb",borderRadius:10,fontSize:13,color:"#92400e",border:"1px solid #fde68a"}}>
-            💡 현재 <strong>{rows.length}건</strong> 저장 중. 중복 제외 후 추가됩니다.
+          {rows.length>0&&<div style={{marginTop:16,padding:"14px 18px",background:"var(--warning-bg)",borderRadius:"var(--radius-md)",fontSize:13,color:"#92400e",
+            border:"1px solid #fde68a",display:"flex",alignItems:"center",gap:8}}>
+            <span style={{fontSize:16}}>💡</span> 현재 <strong>{rows.length}건</strong> 저장 중. 중복 제외 후 추가됩니다.
           </div>}
         </div>}
 
@@ -1053,15 +1129,19 @@ function App() {
         </div>}
 
         {/* HISTORY */}
-        {view==="history"&&<div style={{animation:"fadeUp .35s ease"}}>
-          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",flexWrap:"wrap",gap:10}}>
-            <div><h1 style={S.pt}>사용내역 분류</h1><p style={S.pd}>누적 {rows.length}건</p></div>
+        {view==="history"&&<div style={{animation:"fadeUp var(--transition-slow) ease"}}>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",flexWrap:"wrap",gap:10,marginBottom:4}}>
+            <div><p style={{...S.pd,marginBottom:0}}>누적 {rows.length}건</p></div>
             <button style={S.pri} onClick={()=>setView("upload")}>📤 새 파일 추가</button>
           </div>
-          {!rows.length ? <div style={S.empty}><p style={{color:"#94a3b8"}}>저장된 내역이 없습니다</p></div> : (<>
-            <div style={{display:"flex",gap:8,marginBottom:10,flexWrap:"wrap",alignItems:"center"}}>
-              <input value={searchText} onChange={e=>setSearchText(e.target.value)} placeholder="가맹점명 또는 날짜 검색..."
-                style={{padding:"6px 12px",border:"1.5px solid #e2e8f0",borderRadius:6,fontSize:12,fontFamily:"inherit",minWidth:180,flex:"0 0 auto"}}/>
+          {!rows.length ? <div style={S.empty}><p style={{color:"var(--gray-400)"}}>저장된 내역이 없습니다</p></div> : (<>
+            <div style={{display:"flex",gap:8,marginBottom:12,flexWrap:"wrap",alignItems:"center"}}>
+              <div style={{position:"relative",flex:"0 0 auto"}}>
+                <span style={{position:"absolute",left:10,top:"50%",transform:"translateY(-50%)",fontSize:13,color:"var(--gray-400)",pointerEvents:"none"}}>🔍</span>
+                <input value={searchText} onChange={e=>setSearchText(e.target.value)} placeholder="가맹점명 또는 날짜 검색..."
+                  style={{padding:"8px 12px 8px 32px",border:"1.5px solid var(--gray-200)",borderRadius:"var(--radius-sm)",fontSize:12,fontFamily:"inherit",minWidth:200,
+                    background:"#fff",boxShadow:"var(--shadow-sm)",transition:"all var(--transition-fast)"}}/>
+              </div>
               {searchText && <button style={{...S.fbtn,color:"#ef4444",borderColor:"#fca5a5"}} onClick={()=>setSearchText("")}>검색 초기화</button>}
             </div>
             {months.length>1&&<div style={{display:"flex",gap:5,marginBottom:10,flexWrap:"wrap"}}>
@@ -1118,22 +1198,22 @@ function App() {
               </div>
             ) : (<>
               {/* Controls row */}
-              <div style={{display:"flex",gap:12,marginBottom:18,alignItems:"center",flexWrap:"wrap"}}>
+              <div style={{display:"flex",gap:12,marginBottom:20,alignItems:"center",flexWrap:"wrap"}}>
                 {/* Tab switcher */}
-                <div style={{display:"flex",gap:0,borderRadius:10,overflow:"hidden",border:"1px solid #e2e8f0"}}>
+                <div style={{display:"flex",gap:0,borderRadius:"var(--radius-md)",overflow:"hidden",border:"1px solid var(--gray-200)",boxShadow:"var(--shadow-sm)"}}>
                   {["일반지출","일상경비"].map(t=>(
                     <button key={t} onClick={()=>{setPreviewTab(t);setPreviewCat("all");setEditCell(null);}} style={{
-                      padding:"9px 24px",border:"none",fontSize:13.5,fontWeight:700,fontFamily:"inherit",
+                      padding:"10px 26px",border:"none",fontSize:13.5,fontWeight:700,fontFamily:"inherit",
                       background:previewTab===t?(t==="일반지출"?"#3b82f6":"#10b981"):"#fff",
-                      color:previewTab===t?"#fff":"#64748b",transition:"all .15s"
+                      color:previewTab===t?"#fff":"var(--gray-500)",transition:"all var(--transition-fast)"
                     }}>{t} ({rows.filter(r=>r.tab===t).length})</button>
                   ))}
                 </div>
 
                 {/* Category dropdown */}
                 <select value={previewCat} onChange={e=>{setPreviewCat(e.target.value);setEditCell(null);}} style={{
-                  padding:"9px 14px",border:"2px solid "+accent+"44",borderRadius:10,fontSize:13,fontWeight:600,
-                  fontFamily:"inherit",background:"#fff",color:"#1e293b",minWidth:220,cursor:"pointer"
+                  padding:"10px 16px",border:"2px solid "+accent+"33",borderRadius:"var(--radius-md)",fontSize:13,fontWeight:600,
+                  fontFamily:"inherit",background:"#fff",color:"var(--gray-800)",minWidth:220,cursor:"pointer",boxShadow:"var(--shadow-sm)",transition:"all var(--transition-fast)"
                 }}>
                   <option value="all">전체 카테고리 ({catsWithData.length}개)</option>
                   {tabCats.map(c=>{
@@ -1143,7 +1223,9 @@ function App() {
                 </select>
 
                 <div style={{flex:1}}/>
-                <div style={{fontSize:12,color:"#94a3b8"}}>총 <strong style={{color:accent}}>{tabRows.length}</strong>건 · <strong style={{color:accent}}>{fmt(tabTotal)}</strong>원</div>
+                <div style={{fontSize:12,color:"var(--gray-400)",background:"var(--gray-50)",padding:"8px 14px",borderRadius:"var(--radius-sm)",border:"1px solid var(--gray-100)"}}>
+                  총 <strong style={{color:accent}}>{tabRows.length}</strong>건 · <strong style={{color:accent}}>{fmt(tabTotal)}</strong>원
+                </div>
               </div>
 
               {/* Category tables */}
@@ -1152,7 +1234,7 @@ function App() {
                 const catTotal = catRows.reduce((s,r)=>s+r.amount,0);
 
                 return (
-                  <div key={cat.id} style={{marginBottom:22,borderRadius:12,border:"1px solid #e8eaef",overflow:"hidden",background:"#fff",boxShadow:"0 1px 4px rgba(0,0,0,.04)"}}>
+                  <div key={cat.id} style={{marginBottom:24,borderRadius:"var(--radius-lg)",border:"1px solid var(--gray-200)",overflow:"hidden",background:"#fff",boxShadow:"var(--shadow-md)",transition:"box-shadow var(--transition-fast)"}}>
                     {/* Category header with budget */}
                     <div style={{padding:"14px 18px",background:lightBg,borderBottom:"2px solid "+accent+"33"}}>
                       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
@@ -1335,10 +1417,10 @@ function App() {
               })}
 
               {/* Total summary bar */}
-              <div style={{display:"flex",justifyContent:"flex-end",padding:"8px 0"}}>
-                <div style={{background:lightBg,padding:"14px 24px",borderRadius:12,textAlign:"right",border:"1px solid "+accent+"22"}}>
-                  <div style={{fontSize:12,fontWeight:600,color:accent,marginBottom:2}}>{previewTab} 총계</div>
-                  <div style={{fontSize:22,fontWeight:900,color:accent,fontVariantNumeric:"tabular-nums"}}>{fmt(tabTotal)}원</div>
+              <div style={{display:"flex",justifyContent:"flex-end",padding:"10px 0"}}>
+                <div style={{background:lightBg,padding:"16px 28px",borderRadius:"var(--radius-lg)",textAlign:"right",border:"1px solid "+accent+"22",boxShadow:"0 2px 8px "+accent+"10"}}>
+                  <div style={{fontSize:12,fontWeight:600,color:accent,marginBottom:4,letterSpacing:"0.3px"}}>{previewTab} 총계</div>
+                  <div style={{fontSize:24,fontWeight:900,color:accent,fontVariantNumeric:"tabular-nums",fontFamily:"var(--mono)",letterSpacing:"-0.5px"}}>{fmt(tabTotal)}<span style={{fontSize:14,fontWeight:600,marginLeft:2}}>원</span></div>
                 </div>
               </div>
             </>)}
@@ -1346,8 +1428,7 @@ function App() {
         })()}
 
         {/* BUDGET MANAGEMENT */}
-        {view==="budget"&&<div style={{animation:"fadeUp .35s ease"}}>
-          <h1 style={S.pt}>예산관리</h1><p style={S.pd}>카테고리별 예산액을 수정하고 집행 현황을 확인하세요</p>
+        {view==="budget"&&<div style={{animation:"fadeUp var(--transition-slow) ease"}}>
           {["일반지출","일상경비"].map(tabName=>{
             const cats = CATEGORIES[tabName]||[];
             const isG = tabName==="일반지출";
@@ -1355,13 +1436,16 @@ function App() {
             const tabTotal = cats.reduce((s,c)=>s+(budgets[c.id]||0),0);
             const tabSpent = cats.reduce((s,c)=>s+rows.filter(r=>r.catId===c.id).reduce((ss,r)=>ss+r.amount,0),0);
             return <div key={tabName} style={{marginBottom:24}}>
-              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
-                <h2 style={{fontSize:15,fontWeight:700,color:accent}}>{tabName}</h2>
-                <div style={{fontSize:12,color:"#64748b"}}>
-                  예산합계 <strong style={{color:"#1e293b"}}>{fmt(tabTotal)}원</strong> · 집행합계 <strong style={{color:accent}}>{fmt(tabSpent)}원</strong>
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
+                <div style={{display:"flex",alignItems:"center",gap:10}}>
+                  <span style={{width:10,height:10,borderRadius:"50%",background:accent}}/>
+                  <h2 style={{fontSize:16,fontWeight:800,color:"var(--gray-800)"}}>{tabName}</h2>
+                </div>
+                <div style={{fontSize:12,color:"var(--gray-500)",background:"var(--gray-50)",padding:"6px 14px",borderRadius:"var(--radius-sm)",border:"1px solid var(--gray-100)"}}>
+                  예산 <strong style={{color:"var(--gray-800)"}}>{fmt(tabTotal)}원</strong> · 집행 <strong style={{color:accent}}>{fmt(tabSpent)}원</strong>
                 </div>
               </div>
-              <div style={{borderRadius:10,border:"1px solid #e2e8f0",overflow:"hidden",background:"#fff"}}>
+              <div style={{borderRadius:"var(--radius-md)",border:"1px solid var(--gray-200)",overflow:"hidden",background:"#fff",boxShadow:"var(--shadow-sm)"}}>
                 <table style={{width:"100%",borderCollapse:"collapse",fontSize:13}}>
                   <thead><tr style={{background:"#f8f9fb"}}>
                     <th style={S.pvTh}>카테고리</th>
@@ -1453,17 +1537,17 @@ function App() {
             </div>
 
             {/* Year & Month selector */}
-            <div style={{display:"flex",gap:12,marginBottom:16,alignItems:"center",flexWrap:"wrap"}}>
-              <div style={{display:"flex",alignItems:"center",gap:6}}>
-                <button onClick={()=>setDiscMonth(`${dY-1}-${String(dM).padStart(2,"0")}`)} style={{...S.fbtn,padding:"4px 8px"}}>◀</button>
-                <span style={{fontSize:14,fontWeight:700,minWidth:50,textAlign:"center"}}>{dY}년</span>
-                <button onClick={()=>setDiscMonth(`${dY+1}-${String(dM).padStart(2,"0")}`)} style={{...S.fbtn,padding:"4px 8px"}}>▶</button>
+            <div style={{display:"flex",gap:14,marginBottom:18,alignItems:"center",flexWrap:"wrap"}}>
+              <div style={{display:"flex",alignItems:"center",gap:8,background:"#fff",padding:"4px 6px",borderRadius:"var(--radius-sm)",border:"1px solid var(--gray-200)",boxShadow:"var(--shadow-sm)"}}>
+                <button onClick={()=>setDiscMonth(`${dY-1}-${String(dM).padStart(2,"0")}`)} style={{...S.fbtn,padding:"6px 10px",border:"none",boxShadow:"none",fontSize:11}}>◀</button>
+                <span style={{fontSize:15,fontWeight:800,minWidth:56,textAlign:"center",color:"var(--gray-800)"}}>{dY}년</span>
+                <button onClick={()=>setDiscMonth(`${dY+1}-${String(dM).padStart(2,"0")}`)} style={{...S.fbtn,padding:"6px 10px",border:"none",boxShadow:"none",fontSize:11}}>▶</button>
               </div>
-              <div style={{display:"flex",gap:0,borderRadius:8,overflow:"hidden",border:"1px solid #e2e8f0",flexWrap:"wrap"}}>
+              <div style={{display:"flex",gap:0,borderRadius:"var(--radius-sm)",overflow:"hidden",border:"1px solid var(--gray-200)",flexWrap:"wrap",boxShadow:"var(--shadow-sm)"}}>
                 {[1,2,3,4,5,6,7,8,9,10,11,12].map(m=>(
                   <button key={m} onClick={()=>setDiscMonth(`${dY}-${String(m).padStart(2,"0")}`)}
-                    style={{padding:"7px 12px",border:"none",fontSize:12,fontWeight:dM===m?700:500,fontFamily:"inherit",
-                      background:dM===m?"#6366f1":"#fff",color:dM===m?"#fff":"#64748b",minWidth:38}}>
+                    style={{padding:"8px 13px",border:"none",fontSize:12,fontWeight:dM===m?700:500,fontFamily:"inherit",
+                      background:dM===m?"var(--primary)":"#fff",color:dM===m?"#fff":"var(--gray-500)",minWidth:40,transition:"all var(--transition-fast)"}}>
                     {m}월
                   </button>
                 ))}
@@ -1471,22 +1555,22 @@ function App() {
             </div>
 
             {/* Tab switcher */}
-            <div style={{display:"flex",gap:0,borderRadius:10,overflow:"hidden",border:"1px solid #e2e8f0",marginBottom:16,width:"fit-content"}}>
-              <button onClick={()=>setDiscTab("일반지출")} style={{padding:"9px 22px",border:"none",fontSize:13,fontWeight:700,fontFamily:"inherit",
-                background:discTab==="일반지출"?"#3b82f6":"#fff",color:discTab==="일반지출"?"#fff":"#64748b"}}>
+            <div style={{display:"flex",gap:0,borderRadius:"var(--radius-md)",overflow:"hidden",border:"1px solid var(--gray-200)",marginBottom:18,width:"fit-content",boxShadow:"var(--shadow-sm)"}}>
+              <button onClick={()=>setDiscTab("일반지출")} style={{padding:"10px 24px",border:"none",fontSize:13,fontWeight:700,fontFamily:"inherit",
+                background:discTab==="일반지출"?"#3b82f6":"#fff",color:discTab==="일반지출"?"#fff":"var(--gray-500)",transition:"all var(--transition-fast)"}}>
                 집행내역 ({tab1Rows.length})
               </button>
-              <button onClick={()=>setDiscTab("시책추진")} style={{padding:"9px 22px",border:"none",fontSize:13,fontWeight:700,fontFamily:"inherit",
-                background:discTab==="시책추진"?"#10b981":"#fff",color:discTab==="시책추진"?"#fff":"#64748b"}}>
+              <button onClick={()=>setDiscTab("시책추진")} style={{padding:"10px 24px",border:"none",fontSize:13,fontWeight:700,fontFamily:"inherit",
+                background:discTab==="시책추진"?"#10b981":"#fff",color:discTab==="시책추진"?"#fff":"var(--gray-500)",transition:"all var(--transition-fast)"}}>
                 시책추진업무추진비 ({tab2Rows.length})
               </button>
             </div>
 
             {/* Summary */}
-            <div style={{display:"flex",gap:16,marginBottom:16,fontSize:12,color:"#64748b"}}>
-              <span>{discTab==="일반지출"?"집행내역":"시책추진업무추진비 집행내역"} ({dY}. {String(dM).padStart(2,"0")}월)</span>
-              <span>총 <strong style={{color:"#1e293b"}}>{activeRows.length}</strong>건</span>
-              <span>합계 <strong style={{color:"#1e293b"}}>{fmt(totalAmt)}</strong>원</span>
+            <div style={{display:"flex",gap:16,marginBottom:18,fontSize:12,color:"var(--gray-500)",background:"var(--gray-50)",padding:"10px 16px",borderRadius:"var(--radius-sm)",border:"1px solid var(--gray-100)"}}>
+              <span style={{fontWeight:600}}>{discTab==="일반지출"?"집행내역":"시책추진업무추진비 집행내역"} ({dY}. {String(dM).padStart(2,"0")}월)</span>
+              <span>총 <strong style={{color:"var(--gray-800)"}}>{activeRows.length}</strong>건</span>
+              <span>합계 <strong style={{color:"var(--gray-800)"}}>{fmt(totalAmt)}</strong>원</span>
             </div>
 
             {/* Disclosure table */}
@@ -1545,13 +1629,17 @@ function App() {
 
       {/* Document Generation Modal */}
       {docModal && (
-        <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,.5)",zIndex:1000,display:"flex",alignItems:"center",justifyContent:"center",padding:20}}
+        <div style={{position:"fixed",inset:0,background:"rgba(15,23,42,.55)",backdropFilter:"blur(6px)",zIndex:1000,display:"flex",alignItems:"center",justifyContent:"center",padding:20,animation:"fadeIn .2s"}}
           onClick={(e)=>{if(e.target===e.currentTarget)setDocModal(null);}}>
-          <div style={{background:"#fff",borderRadius:16,width:"100%",maxWidth:640,maxHeight:"90vh",overflow:"auto",boxShadow:"0 20px 60px rgba(0,0,0,.2)"}}>
+          <div style={{background:"#fff",borderRadius:"var(--radius-xl)",width:"100%",maxWidth:640,maxHeight:"90vh",overflow:"auto",boxShadow:"var(--shadow-xl)",animation:"scaleIn .25s ease"}}>
             {/* Modal header */}
-            <div style={{padding:"18px 24px",borderBottom:"1px solid #eaecf0",display:"flex",justifyContent:"space-between",alignItems:"center",position:"sticky",top:0,background:"#fff",borderRadius:"16px 16px 0 0",zIndex:1}}>
-              <h3 style={{fontSize:16,fontWeight:700,margin:0}}>📄 공문 생성{docModal.mode==="combined"?" (2건 합치기)":""}</h3>
-              <button onClick={()=>setDocModal(null)} style={{border:"none",background:"none",fontSize:20,color:"#94a3b8",padding:"4px 8px"}}>✕</button>
+            <div style={{padding:"20px 26px",borderBottom:"1px solid var(--gray-200)",display:"flex",justifyContent:"space-between",alignItems:"center",position:"sticky",top:0,background:"rgba(255,255,255,.95)",backdropFilter:"blur(12px)",borderRadius:"var(--radius-xl) var(--radius-xl) 0 0",zIndex:1}}>
+              <h3 style={{fontSize:16,fontWeight:800,margin:0,display:"flex",alignItems:"center",gap:8}}>
+                <span style={{width:28,height:28,borderRadius:8,background:"var(--primary-bg)",display:"inline-flex",alignItems:"center",justifyContent:"center",fontSize:14}}>📄</span>
+                공문 생성{docModal.mode==="combined"?" (2건 합치기)":""}
+              </h3>
+              <button onClick={()=>setDocModal(null)} style={{border:"none",background:"var(--gray-100)",fontSize:14,color:"var(--gray-400)",padding:"6px 8px",borderRadius:6,transition:"all var(--transition-fast)"}}
+                onMouseEnter={e=>{e.currentTarget.style.background="var(--gray-200)";}} onMouseLeave={e=>{e.currentTarget.style.background="var(--gray-100)";}}>✕</button>
             </div>
 
             <div style={{padding:"20px 24px"}}>
@@ -1631,37 +1719,41 @@ function App() {
 }
 
 const S = {
-  wrap:{display:"flex",minHeight:"100vh",background:"#f0f2f7",color:"#0f172a"},
-  nav:{width:240,background:"#0f172a",display:"flex",flexDirection:"column",top:0,height:"100vh",flexShrink:0,overflow:"auto"},
-  nb:{display:"flex",alignItems:"center",gap:8,padding:"8px 12px",width:"100%",border:"none",borderRadius:7,background:"transparent",fontSize:13,fontWeight:500,color:"#94a3b8",textAlign:"left",fontFamily:"inherit",marginBottom:1},
-  nbA:{background:"rgba(255,255,255,.08)",color:"#fff",fontWeight:700},
-  ns:{padding:"6px 12px",border:"none",borderRadius:5,background:"transparent",fontSize:11,fontWeight:500,color:"#64748b",textAlign:"left",fontFamily:"inherit",width:"100%"},
-  main:{flex:1,padding:"18px 22px",minWidth:0,maxWidth:1200,overflowX:"hidden"},
-  pt:{fontSize:19,fontWeight:800,letterSpacing:"-0.5px",marginBottom:2},
-  pd:{fontSize:12,color:"#94a3b8",marginBottom:14},
-  empty:{textAlign:"center",padding:"48px 20px",background:"#fff",borderRadius:10,border:"1px solid #e2e8f0"},
-  pri:{padding:"8px 18px",background:"linear-gradient(135deg,#4f46e5,#4338ca)",color:"#fff",border:"none",borderRadius:8,fontSize:13,fontWeight:700,boxShadow:"0 2px 8px rgba(79,70,229,.2)",fontFamily:"inherit"},
-  sec2:{padding:"8px 18px",background:"#fff",color:"#475569",border:"1px solid #e2e8f0",borderRadius:8,fontSize:13,fontWeight:600,fontFamily:"inherit"},
-  sec:{background:"#fff",borderRadius:10,padding:"14px 16px",marginBottom:14,border:"1px solid #e2e8f0"},
-  st:{fontSize:13,fontWeight:700,marginBottom:10},
-  drop:{border:"2px dashed #cbd5e1",borderRadius:10,padding:"44px 20px",textAlign:"center",cursor:"pointer",background:"#fff",transition:"all .15s"},
-  dropA:{borderColor:"#4f46e5",background:"#f5f3ff"},
-  toolbar:{display:"flex",justifyContent:"space-between",alignItems:"center",gap:8,marginBottom:8,flexWrap:"wrap"},
-  fbtn:{padding:"4px 10px",border:"1px solid #e2e8f0",borderRadius:6,background:"#fff",fontSize:12,fontWeight:500,color:"#475569",fontFamily:"inherit"},
-  fbtnA:{background:"#0f172a",color:"#fff",borderColor:"#0f172a"},
-  bbtn:{padding:"4px 12px",background:"#d97706",color:"#fff",border:"none",borderRadius:6,fontSize:11.5,fontWeight:700,whiteSpace:"nowrap",fontFamily:"inherit"},
-  sel:{padding:"5px 8px",border:"1.5px solid #e2e8f0",borderRadius:5,fontSize:12,width:"100%",background:"#fff",color:"#334155",marginBottom:2},
-  badge:{display:"inline-block",padding:"1px 6px",borderRadius:3,fontSize:10,fontWeight:700,letterSpacing:"-.2px"},
-  tw:{borderRadius:8,border:"1px solid #e2e8f0",overflow:"auto",background:"#fff"},
+  wrap:{display:"flex",minHeight:"100vh",background:"transparent",color:"var(--gray-900)"},
+  nav:{width:260,background:"linear-gradient(180deg,#0f172a 0%,#131c2e 100%)",display:"flex",flexDirection:"column",top:0,height:"100vh",flexShrink:0,overflow:"auto"},
+  nb:{display:"flex",alignItems:"center",gap:10,padding:"9px 14px",width:"100%",border:"none",borderRadius:8,background:"transparent",fontSize:13,fontWeight:500,color:"#94a3b8",textAlign:"left",fontFamily:"inherit",marginBottom:2,transition:"all var(--transition-fast)"},
+  nbA:{background:"rgba(99,102,241,.12)",color:"#fff",fontWeight:700},
+  ns:{padding:"7px 14px",border:"none",borderRadius:6,background:"transparent",fontSize:11.5,fontWeight:500,color:"var(--gray-500)",textAlign:"left",fontFamily:"inherit",width:"100%",transition:"all var(--transition-fast)"},
+  main:{flex:1,padding:"10px 24px 24px",minWidth:0,maxWidth:1200,overflowX:"hidden",margin:"0 auto"},
+  pt:{fontSize:20,fontWeight:800,letterSpacing:"-0.5px",marginBottom:3,color:"var(--gray-900)"},
+  pd:{fontSize:12.5,color:"var(--gray-400)",marginBottom:16,fontWeight:500},
+  empty:{textAlign:"center",padding:"52px 24px",background:"#fff",borderRadius:"var(--radius-lg)",border:"1px solid var(--gray-200)",boxShadow:"var(--shadow-sm)"},
+  pri:{padding:"9px 20px",background:"linear-gradient(135deg,#4f46e5 0%,#4338ca 100%)",color:"#fff",border:"none",borderRadius:"var(--radius-sm)",fontSize:13,fontWeight:700,
+    boxShadow:"0 2px 8px rgba(79,70,229,.2),inset 0 1px 0 rgba(255,255,255,.1)",fontFamily:"inherit"},
+  sec2:{padding:"9px 20px",background:"#fff",color:"var(--gray-600)",border:"1px solid var(--gray-200)",borderRadius:"var(--radius-sm)",fontSize:13,fontWeight:600,fontFamily:"inherit",
+    boxShadow:"var(--shadow-sm)"},
+  sec:{background:"#fff",borderRadius:"var(--radius-md)",padding:"16px 18px",marginBottom:16,border:"1px solid var(--gray-200)",boxShadow:"var(--shadow-sm)"},
+  st:{fontSize:14,fontWeight:700,marginBottom:12,color:"var(--gray-800)"},
+  drop:{border:"2px dashed var(--gray-300)",borderRadius:"var(--radius-xl)",padding:"52px 24px",textAlign:"center",cursor:"pointer",background:"#fff",transition:"all var(--transition-normal)"},
+  dropA:{borderColor:"var(--primary)",background:"#f5f3ff"},
+  toolbar:{display:"flex",justifyContent:"space-between",alignItems:"center",gap:10,marginBottom:10,flexWrap:"wrap",padding:"8px 0"},
+  fbtn:{padding:"6px 14px",border:"1px solid var(--gray-200)",borderRadius:"var(--radius-sm)",background:"#fff",fontSize:12,fontWeight:600,color:"var(--gray-600)",fontFamily:"inherit",
+    boxShadow:"var(--shadow-sm)",transition:"all var(--transition-fast)"},
+  fbtnA:{background:"var(--gray-900)",color:"#fff",borderColor:"var(--gray-900)",boxShadow:"0 2px 6px rgba(15,23,42,.15)"},
+  bbtn:{padding:"6px 14px",background:"linear-gradient(135deg,#d97706,#b45309)",color:"#fff",border:"none",borderRadius:"var(--radius-sm)",fontSize:12,fontWeight:700,whiteSpace:"nowrap",fontFamily:"inherit",
+    boxShadow:"0 2px 6px rgba(217,119,6,.2)"},
+  sel:{padding:"6px 10px",border:"1.5px solid var(--gray-200)",borderRadius:"var(--radius-sm)",fontSize:12,width:"100%",background:"#fff",color:"var(--gray-700)",marginBottom:2,transition:"border-color var(--transition-fast)"},
+  badge:{display:"inline-block",padding:"2px 8px",borderRadius:4,fontSize:10,fontWeight:700,letterSpacing:"-.2px"},
+  tw:{borderRadius:"var(--radius-md)",border:"1px solid var(--gray-200)",overflow:"auto",background:"#fff",boxShadow:"var(--shadow-sm)"},
   tbl:{width:"100%",borderCollapse:"collapse",fontSize:12.5},
-  th:{padding:"8px",borderBottom:"1px solid #e2e8f0",fontWeight:700,textAlign:"left",fontSize:10.5,color:"#94a3b8",whiteSpace:"nowrap"},
-  thc:{padding:"8px 6px",borderBottom:"1px solid #e2e8f0",width:30,textAlign:"center"},
-  td:{padding:"7px 8px",fontSize:12.5},
-  tdc:{padding:"7px 6px",textAlign:"center"},
-  inp:{padding:"3px 6px",border:"1px solid #e2e8f0",borderRadius:4,fontSize:11,flex:1,minWidth:55,color:"#334155",background:"#fafafc",fontFamily:"inherit"},
-  tiny:{border:"none",background:"none",fontSize:12,padding:"1px 4px",borderRadius:3,fontWeight:600},
-  pvTh:{padding:"7px 10px",background:"#f8f9fb",borderBottom:"1px solid #e2e8f0",fontWeight:700,fontSize:10.5,color:"#94a3b8",textAlign:"left",whiteSpace:"nowrap"},
-  pvTd:{padding:"7px 10px",fontSize:12.5,whiteSpace:"nowrap"},
+  th:{padding:"10px 10px",borderBottom:"2px solid var(--gray-200)",fontWeight:700,textAlign:"left",fontSize:10.5,color:"var(--gray-400)",whiteSpace:"nowrap",letterSpacing:"0.3px",textTransform:"none"},
+  thc:{padding:"10px 8px",borderBottom:"2px solid var(--gray-200)",width:30,textAlign:"center"},
+  td:{padding:"9px 10px",fontSize:12.5},
+  tdc:{padding:"9px 8px",textAlign:"center"},
+  inp:{padding:"4px 8px",border:"1.5px solid var(--gray-200)",borderRadius:"var(--radius-sm)",fontSize:11,flex:1,minWidth:55,color:"var(--gray-700)",background:"var(--gray-50)",fontFamily:"inherit",transition:"all var(--transition-fast)"},
+  tiny:{border:"none",background:"none",fontSize:12,padding:"2px 6px",borderRadius:4,fontWeight:600,transition:"all var(--transition-fast)"},
+  pvTh:{padding:"9px 12px",background:"var(--gray-50)",borderBottom:"2px solid var(--gray-200)",fontWeight:700,fontSize:10.5,color:"var(--gray-400)",textAlign:"left",whiteSpace:"nowrap",letterSpacing:"0.3px"},
+  pvTd:{padding:"9px 12px",fontSize:12.5,whiteSpace:"nowrap"},
 };
 
 ReactDOM.createRoot(document.getElementById("root")).render(React.createElement(App));
