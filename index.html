@@ -557,6 +557,32 @@ function App() {
 
   const notify = (msg, type="ok") => { setToast({msg,type}); setTimeout(()=>setToast(null),2800); };
 
+  // 페이지 이탈 시 백업 확인
+  const [showExitBackup, setShowExitBackup] = useState(false);
+  useEffect(() => {
+    if (!presetName || !rows.length) return;
+    const handler = (e) => {
+      e.preventDefault();
+      e.returnValue = "";
+      setShowExitBackup(true);
+    };
+    window.addEventListener("beforeunload", handler);
+    return () => window.removeEventListener("beforeunload", handler);
+  }, [presetName, rows.length]);
+
+  // 페이지 포커스 복귀 시 백업 배너 표시 (beforeunload 취소 후 돌아왔을 때)
+  useEffect(() => {
+    const handler = () => {
+      if (showExitBackup) {
+        // 사용자가 "이 페이지에 머무르기"를 선택한 경우
+        // 잠시 후 배너 자동 숨김
+        setTimeout(() => setShowExitBackup(false), 15000);
+      }
+    };
+    window.addEventListener("focus", handler);
+    return () => window.removeEventListener("focus", handler);
+  }, [showExitBackup]);
+
   useEffect(() => {
     if (!presetName) { setLoading(false); return; }
     const d = loadData(presetName);
@@ -1092,6 +1118,25 @@ function App() {
         borderLeft:`4px solid ${toast.type==="ok"?"#16a34a":"#dc2626"}`,boxShadow:"var(--shadow-lg)",animation:"scaleIn .25s ease",
         display:"flex",alignItems:"center",gap:8,backdropFilter:"blur(8px)"
       }}><span style={{fontSize:15}}>{toast.type==="ok"?"✓":"⚠"}</span> {toast.msg}</div>}
+
+      {/* 종료 전 백업 안내 배너 */}
+      {showExitBackup && rows.length>0 && <div style={{position:"fixed",top:0,left:0,right:0,zIndex:1200,
+        background:"linear-gradient(135deg,#1e1b4b,#312e81)",padding:"16px 24px",
+        boxShadow:"0 4px 20px rgba(0,0,0,.3)",animation:"fadeIn .3s",display:"flex",alignItems:"center",justifyContent:"center",gap:16,flexWrap:"wrap"}}>
+        <span style={{color:"#fbbf24",fontSize:18}}>💾</span>
+        <span style={{color:"#fff",fontSize:14,fontWeight:600}}>종료 전 백업하시겠습니까?</span>
+        <span style={{color:"rgba(255,255,255,.6)",fontSize:12}}>데이터 손실 방지를 위해 백업을 권장합니다</span>
+        <div style={{display:"flex",gap:8}}>
+          <button onClick={()=>{saveToFile();setShowExitBackup(false);}}
+            style={{padding:"8px 20px",background:"#fbbf24",color:"#1e1b4b",border:"none",borderRadius:8,fontSize:13,fontWeight:800,fontFamily:"inherit",boxShadow:"0 2px 8px rgba(251,191,36,.3)"}}>
+            백업 저장
+          </button>
+          <button onClick={()=>setShowExitBackup(false)}
+            style={{padding:"8px 16px",background:"rgba(255,255,255,.1)",color:"rgba(255,255,255,.7)",border:"1px solid rgba(255,255,255,.2)",borderRadius:8,fontSize:12,fontWeight:600,fontFamily:"inherit"}}>
+            닫기
+          </button>
+        </div>
+      </div>}
 
       {/* Sidebar overlay */}
       {sideOpen && <div style={{position:"fixed",inset:0,background:"rgba(15,23,42,.45)",backdropFilter:"blur(4px)",zIndex:998,animation:"fadeIn .2s"}} onClick={()=>setSideOpen(false)}/>}
