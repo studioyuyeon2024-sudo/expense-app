@@ -616,7 +616,7 @@ function App() {
     const custom = loadCustomPresets();
     custom[presetName] = updatedPreset;
     saveCustomPresets(custom);
-    setAllPresets(getAllPresets());
+    setAllPresets({...allPresets, [presetName]: updatedPreset});
     // 예산 업데이트
     const yrB = {...(budgets[budgetYear]||{}), [newId]: parseAmt(budget)};
     const newB = {...budgets, [budgetYear]: yrB};
@@ -641,7 +641,7 @@ function App() {
     const custom = loadCustomPresets();
     custom[presetName] = updatedPreset;
     saveCustomPresets(custom);
-    setAllPresets(getAllPresets());
+    setAllPresets({...allPresets, [presetName]: updatedPreset});
     // 분류된 행들을 미분류로 변경
     if (hasData) {
       const updated = rows.map(r => r.catId === catId ? {...r, tab:"", catId:""} : r);
@@ -1177,7 +1177,7 @@ function App() {
               <button onClick={()=>setDashYear("all")} style={{padding:"6px 14px",border:"none",fontSize:12,fontWeight:dashYear==="all"?700:500,fontFamily:"inherit",
                 background:dashYear==="all"?"var(--gray-900)":"#fff",color:dashYear==="all"?"#fff":"var(--gray-500)",transition:"all var(--transition-fast)"}}>전체</button>
               {allYears.map(y=>(
-                <button key={y} onClick={()=>setDashYear(y)} style={{padding:"6px 14px",border:"none",fontSize:12,fontWeight:dashYear===y?700:500,fontFamily:"inherit",
+                <button key={y} onClick={()=>{setDashYear(y);setBudgetYear(y);}} style={{padding:"6px 14px",border:"none",fontSize:12,fontWeight:dashYear===y?700:500,fontFamily:"inherit",
                   background:dashYear===y?"var(--gray-900)":"#fff",color:dashYear===y?"#fff":"var(--gray-500)",transition:"all var(--transition-fast)"}}>{y}</button>
               ))}
             </div>
@@ -2051,7 +2051,7 @@ function App() {
                   <button onClick={()=>setAddMode(true)} style={{fontSize:11,fontWeight:700,color:"var(--primary)",border:"none",background:"none",padding:"2px 4px"}}>+ 제목 추가</button>
                 </div>
                 {titles.map((t,i)=>(
-                  <div key={i} style={{padding:"10px 14px",border:"1px solid var(--gray-200)",borderRadius:"var(--radius-sm)",marginBottom:6,background:"var(--gray-50)"}}>
+                  <div key={t.id||i} style={{padding:"10px 14px",border:"1px solid var(--gray-200)",borderRadius:"var(--radius-sm)",marginBottom:6,background:"var(--gray-50)"}}>
                     <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:8}}>
                       <div style={{flex:1,minWidth:0}}>
                         <div style={{fontSize:13,fontWeight:600,color:"var(--gray-800)",marginBottom:3}}>{t.label}</div>
