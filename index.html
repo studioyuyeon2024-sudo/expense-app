@@ -292,6 +292,7 @@ function App() {
   const [catNames, setCatNames] = useState({}); // {catId: "오버라이드 이름"}
   const [editCatName, setEditCatName] = useState(null); // catId being edited
   const [sideOpen, setSideOpen] = useState(false); // hamburger sidebar toggle
+  const [sortDesc, setSortDesc] = useState(true); // true=최신순(내림), false=오래된순(오름)
   const fRef = useRef(null);
 
   // Derive preset data
@@ -1225,6 +1226,12 @@ function App() {
                   })}
                 </select>
 
+                <button onClick={()=>setSortDesc(!sortDesc)}
+                  style={{padding:"8px 14px",border:"1px solid var(--gray-200)",borderRadius:"var(--radius-sm)",background:"#fff",fontSize:12,fontWeight:600,
+                    fontFamily:"inherit",color:"var(--gray-600)",cursor:"pointer",boxShadow:"var(--shadow-sm)",display:"flex",alignItems:"center",gap:5,whiteSpace:"nowrap"}}>
+                  {sortDesc?"▼ 최신순":"▲ 오래된순"}
+                </button>
+
                 <div style={{flex:1}}/>
                 <div style={{fontSize:12,color:"var(--gray-400)",background:"var(--gray-50)",padding:"8px 14px",borderRadius:"var(--radius-sm)",border:"1px solid var(--gray-100)"}}>
                   총 <strong style={{color:accent}}>{tabRows.length}</strong>건 · <strong style={{color:accent}}>{fmt(tabTotal)}</strong>원
@@ -1233,7 +1240,7 @@ function App() {
 
               {/* Category tables */}
               {activeCats.map(cat => {
-                const catRows = rows.filter(r=>r.catId===cat.id).sort((a,b)=>a.date.localeCompare(b.date));
+                const catRows = rows.filter(r=>r.catId===cat.id).sort((a,b)=>sortDesc?b.date.localeCompare(a.date):a.date.localeCompare(b.date));
                 const catTotal = catRows.reduce((s,r)=>s+r.amount,0);
 
                 return (
