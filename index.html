@@ -13,7 +13,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.9/babel.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="https://unpkg.com/@supabase/supabase-js@2"></script>
 <style>
   :root{
     --mono:'JetBrains Mono',monospace;
@@ -65,7 +65,11 @@ const {useState, useCallback, useRef, useEffect, useMemo} = React;
 const SUPABASE_URL = "https://jupyeldwarunpepudhpy.supabase.co";
 const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp1cHllbGR3YXJ1bnBlcHVkaHB5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUxOTk0NDIsImV4cCI6MjA5MDc3NTQ0Mn0.Nd5RXuRwju0GHlzFPWcEumlV8M835FqaxmUBDiRpgfg";
 let supabase = null;
-try { supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY); } catch(e) { console.error("Supabase 초기화 실패:", e); }
+try {
+  const sb = window.supabase || window.Supabase;
+  if (sb && sb.createClient) supabase = sb.createClient(SUPABASE_URL, SUPABASE_KEY);
+  else console.warn("Supabase 라이브러리 로드 안됨 - localStorage만 사용");
+} catch(e) { console.error("Supabase 초기화 실패:", e); }
 
 // Supabase DB 함수들
 const ADMIN_PASSWORD = "admin0922";
