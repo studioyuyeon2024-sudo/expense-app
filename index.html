@@ -13,7 +13,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.9/babel.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-<script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.4/dist/umd/supabase.min.js"></script>
 <style>
   :root{
     --mono:'JetBrains Mono',monospace;
@@ -378,6 +378,11 @@ function App() {
   const [addCatTab, setAddCatTab] = useState("일반지출"); // 카테고리 추가 탭
   const [addCatName, setAddCatName] = useState(""); // 카테고리 추가 이름
   const [addCatBudget, setAddCatBudget] = useState(""); // 카테고리 추가 예산
+  const [loginTarget, setLoginTarget] = useState(null);
+  const [loginPw, setLoginPw] = useState("");
+  const [loginError, setLoginError] = useState("");
+  const [adminMode, setAdminMode] = useState(false);
+  const [adminData, setAdminData] = useState([]);
   const fRef = useRef(null);
 
   // Derive preset data
@@ -1087,14 +1092,6 @@ function App() {
       </div>
     );
   };
-
-  // Preset selection screen
-  // 과 선택 시 비밀번호 확인
-  const [loginTarget, setLoginTarget] = useState(null); // 비밀번호 입력 중인 과 이름
-  const [loginPw, setLoginPw] = useState("");
-  const [loginError, setLoginError] = useState("");
-  const [adminMode, setAdminMode] = useState(false);
-  const [adminData, setAdminData] = useState([]); // 관리자 통합 조회 데이터
 
   const handlePresetLogin = async (name) => {
     const dept = await dbGetDepartment(name);
