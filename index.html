@@ -244,7 +244,7 @@ function App() {
   const [view, setView] = useState("home");
   const [loading, setLoading] = useState(true);
   const [toast, setToast] = useState(null);
-  const [filterTab, setFilterTab] = useState("all");
+  const [filterTab, setFilterTab] = useState("미분류");
   const [filterMonth, setFilterMonth] = useState("all");
   const [selected, setSelected] = useState(new Set());
   const [batchCat, setBatchCat] = useState("");
@@ -815,7 +815,7 @@ function App() {
   const FilterBar = ({isNew}) => (
     <div style={S.toolbar}>
       <div style={{display:"flex",gap:5,flexWrap:"wrap"}}>
-        {["all","미분류","일반지출","일상경비"].map(f=>(
+        {["미분류","all","일반지출","일상경비"].map(f=>(
           <button key={f} style={{...S.fbtn,...(filterTab===f?S.fbtnA:{})}} onClick={()=>setFilterTab(f)}>{f==="all"?"전체":f}</button>
         ))}
       </div>
@@ -898,14 +898,14 @@ function App() {
         </div>
         <div style={{padding:"6px 8px",flex:1}}>
           {[["home","📊","대시보드"],["upload","📤","업로드"],["history","📋","사용내역 분류"],["preview","📑","사용내역 보기"],["budget","💰","예산관리"],["disclosure","📊","정보공개"]].map(([id,ic,lb])=>(
-            <button key={id} onClick={()=>{setView(id);setSelected(new Set());setDocSelected(new Set());setFilterTab("all");setFilterMonth("all");setSearchText("");}}
+            <button key={id} onClick={()=>{setView(id);setSelected(new Set());setDocSelected(new Set());setFilterTab("미분류");setFilterMonth("all");setSearchText("");}}
               style={{...S.nb,...((view===id||(view==="classify"&&id==="upload"))?S.nbA:{})}}>
               <span style={{fontSize:14}}>{ic}</span><span>{lb}</span>
             </button>
           ))}
         </div>
         <div style={{padding:"6px 8px",borderTop:"1px solid rgba(255,255,255,.06)",display:"flex",flexDirection:"column",gap:1}}>
-          <div style={{padding:"6px 12px",fontSize:10,color:"#64748b",fontWeight:600,textAlign:"center",background:"rgba(255,255,255,.04)",borderRadius:5,marginBottom:4}}>
+          <div style={{padding:"10px 12px",fontSize:14,color:"#fff",fontWeight:800,textAlign:"center",background:"linear-gradient(135deg,#6366f1,#4f46e5)",borderRadius:8,marginBottom:6,letterSpacing:"-0.3px"}}>
             {presetName}
           </div>
           <button style={S.ns} onClick={exportXLSX} disabled={!rows.length}>📥 엑셀 내보내기</button>
