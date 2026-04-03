@@ -310,6 +310,9 @@ function App() {
   const [customDocTmpls, setCustomDocTmpls] = useState({}); // 커스텀 공문 템플릿
   const [docEditCat, setDocEditCat] = useState(null); // 공문 편집 중인 카테고리 ID
   const [budgetYear, setBudgetYear] = useState(() => String(new Date().getFullYear())); // 예산관리 연도
+  const [addCatTab, setAddCatTab] = useState("일반지출"); // 카테고리 추가 탭
+  const [addCatName, setAddCatName] = useState(""); // 카테고리 추가 이름
+  const [addCatBudget, setAddCatBudget] = useState(""); // 카테고리 추가 예산
   const fRef = useRef(null);
 
   // Derive preset data
@@ -599,14 +602,19 @@ function App() {
       fields: ["월","일자","금액","장소","사용내역"],
       dateField: "일자", amountField: "금액", placeField: "장소"
     };
-    // 프리셋 업데이트
+    // 프리셋 업데이트 (깊은 복사로 원본 보호)
     const ap = getAllPresets();
     const preset = ap[presetName];
     if (!preset) return;
-    preset.categories[tabName] = [...(preset.categories[tabName]||[]), newCat];
-    // 커스텀 프리셋으로 저장
+    const updatedPreset = {
+      ...preset,
+      categories: {
+        ...preset.categories,
+        [tabName]: [...(preset.categories[tabName]||[]), newCat]
+      }
+    };
     const custom = loadCustomPresets();
-    custom[presetName] = preset;
+    custom[presetName] = updatedPreset;
     saveCustomPresets(custom);
     setAllPresets(getAllPresets());
     // 예산 업데이트
@@ -623,9 +631,15 @@ function App() {
     // 해당 카테고리에 분류된 데이터가 있는지 확인
     const hasData = rows.some(r => r.catId === catId);
     if (hasData && !confirm(`이 카테고리에 분류된 데이터가 있습니다.\n삭제하면 해당 항목은 미분류로 변경됩니다.\n계속하시겠습니까?`)) return;
-    preset.categories[tabName] = (preset.categories[tabName]||[]).filter(c => c.id !== catId);
+    const updatedPreset = {
+      ...preset,
+      categories: {
+        ...preset.categories,
+        [tabName]: (preset.categories[tabName]||[]).filter(c => c.id !== catId)
+      }
+    };
     const custom = loadCustomPresets();
-    custom[presetName] = preset;
+    custom[presetName] = updatedPreset;
     saveCustomPresets(custom);
     setAllPresets(getAllPresets());
     // 분류된 행들을 미분류로 변경
@@ -697,7 +711,15 @@ function App() {
     else persist(rows.map(r=>selected.has(r.id)?{...r,tab:c.tab,catId:c.id}:r));
     setSelected(new Set()); notify(`${selected.size}건 일괄 분류`);
   };
-  const resetAll = () => { if(!confirm("모든 데이터를 삭제하시겠습니까?")) return; const defB={...DEFAULT_BUDGETS}; setBudgets(defB); persist([], defB); setView("home"); notify("초기화 완료"); };
+  const resetAll = () => {
+    if(!confirm("모든 데이터를 삭제하시겠습니까?\n(사용내역, 예산, 공문 설정 모두 삭제)")) return;
+    const yr = String(new Date().getFullYear());
+    const newB = {[yr]: {...DEFAULT_BUDGETS}};
+    setBudgets(newB);
+    persist([], newB, {}, {});
+    setView("home");
+    notify("초기화 완료");
+  };
 
   const getFiltered = (src) => {
     let l = src;
@@ -1811,31 +1833,21 @@ function App() {
           {/* 카테고리 추가 */}
           <div style={{...S.sec,borderRadius:"var(--radius-md)"}}>
             <h3 style={{fontSize:13,fontWeight:700,color:"var(--gray-700)",marginBottom:10}}>카테고리 추가</h3>
-            {(()=>{
-              const [addTab2, setAddTab2] = useState("일반지출");
-              const [addName, setAddName] = useState("");
-              const [addBudget, setAddBudget] = useState("");
-              const doAdd = () => {
-                if(!addName.trim()) return;
-                addCategory(addTab2, addName, addBudget);
-                setAddName(""); setAddBudget("");
-              };
-              return <div style={{display:"flex",gap:8,alignItems:"center",flexWrap:"wrap"}}>
-                <div style={{display:"flex",gap:0,borderRadius:"var(--radius-sm)",overflow:"hidden",border:"1px solid var(--gray-200)"}}>
-                  {["일반지출","일상경비"].map(t=>(
-                    <button key={t} onClick={()=>setAddTab2(t)} style={{padding:"6px 14px",border:"none",fontSize:11,fontWeight:addTab2===t?700:500,fontFamily:"inherit",
-                      background:addTab2===t?(t==="일반지출"?"#3b82f6":"#10b981"):"#fff",color:addTab2===t?"#fff":"var(--gray-500)"}}>{t}</button>
-                  ))}
-                </div>
-                <input value={addName} onChange={e=>setAddName(e.target.value)} placeholder="카테고리명"
-                  style={{flex:1,minWidth:140,padding:"7px 12px",border:"1.5px solid var(--gray-200)",borderRadius:"var(--radius-sm)",fontSize:12,fontFamily:"inherit"}}
-                  onKeyDown={e=>{if(e.key==="Enter")doAdd();}}/>
-                <input value={addBudget} onChange={e=>setAddBudget(e.target.value)} placeholder="예산액"
-                  style={{width:110,padding:"7px 12px",border:"1.5px solid var(--gray-200)",borderRadius:"var(--radius-sm)",fontSize:12,fontFamily:"inherit",textAlign:"right"}}
-                  onKeyDown={e=>{if(e.key==="Enter")doAdd();}}/>
-                <button onClick={doAdd} style={{...S.pri,fontSize:12,padding:"7px 16px"}}>추가</button>
-              </div>;
-            })()}
+            <div style={{display:"flex",gap:8,alignItems:"center",flexWrap:"wrap"}}>
+              <div style={{display:"flex",gap:0,borderRadius:"var(--radius-sm)",overflow:"hidden",border:"1px solid var(--gray-200)"}}>
+                {["일반지출","일상경비"].map(t=>(
+                  <button key={t} onClick={()=>setAddCatTab(t)} style={{padding:"6px 14px",border:"none",fontSize:11,fontWeight:addCatTab===t?700:500,fontFamily:"inherit",
+                    background:addCatTab===t?(t==="일반지출"?"#3b82f6":"#10b981"):"#fff",color:addCatTab===t?"#fff":"var(--gray-500)"}}>{t}</button>
+                ))}
+              </div>
+              <input value={addCatName} onChange={e=>setAddCatName(e.target.value)} placeholder="카테고리명"
+                style={{flex:1,minWidth:140,padding:"7px 12px",border:"1.5px solid var(--gray-200)",borderRadius:"var(--radius-sm)",fontSize:12,fontFamily:"inherit"}}
+                onKeyDown={e=>{if(e.key==="Enter"&&addCatName.trim()){addCategory(addCatTab,addCatName,addCatBudget);setAddCatName("");setAddCatBudget("");}}}/>
+              <input value={addCatBudget} onChange={e=>setAddCatBudget(e.target.value)} placeholder="예산액"
+                style={{width:110,padding:"7px 12px",border:"1.5px solid var(--gray-200)",borderRadius:"var(--radius-sm)",fontSize:12,fontFamily:"inherit",textAlign:"right"}}
+                onKeyDown={e=>{if(e.key==="Enter"&&addCatName.trim()){addCategory(addCatTab,addCatName,addCatBudget);setAddCatName("");setAddCatBudget("");}}}/>
+              <button onClick={()=>{if(addCatName.trim()){addCategory(addCatTab,addCatName,addCatBudget);setAddCatName("");setAddCatBudget("");}}} style={{...S.pri,fontSize:12,padding:"7px 16px"}}>추가</button>
+            </div>
           </div>
 
           <div style={{display:"flex",gap:10,justifyContent:"flex-end"}}>
