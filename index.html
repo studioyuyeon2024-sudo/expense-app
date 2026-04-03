@@ -1117,7 +1117,7 @@ function App() {
         </div>
         <div style={{padding:"8px 10px",flex:1}}>
           <div style={{fontSize:9,fontWeight:700,color:"rgba(255,255,255,.25)",textTransform:"uppercase",letterSpacing:"1.5px",padding:"8px 12px 4px"}}>메뉴</div>
-          {[["home","📊","대시보드"],["history","📋","사용내역 분류"],["preview","📑","사용내역 보기"],["budget","💰","예산관리"],["docSetup","📝","공문 설정"],["disclosure","📊","정보공개"]].map(([id,ic,lb])=>{
+          {[["home","📊","대시보드"],["history","📋","사용내역 분류"],["preview","📑","사용내역 보기"],["budget","💰","예산관리"],["docSetup","📝","공문 설정"],["disclosure","📊","정보공개"],["manual","📖","사용 매뉴얼"]].map(([id,ic,lb])=>{
             const isActive = view===id||(view==="classify"&&id==="history");
             return <button key={id} onClick={()=>{setView(id);setSideOpen(false);setSelected(new Set());setDocSelected(new Set());setFilterTab("미분류");setFilterMonth("all");setSearchText("");}}
               style={{...S.nb,...(isActive?S.nbA:{}),position:"relative",overflow:"hidden"}}>
@@ -1984,6 +1984,150 @@ function App() {
             )}
           </div>;
         })()}
+
+        {/* MANUAL */}
+        {view==="manual"&&<div style={{animation:"fadeUp var(--transition-slow) ease"}}>
+          {(()=>{
+            const MS={sec:{background:"#fff",borderRadius:"var(--radius-lg)",padding:"20px 24px",marginBottom:16,border:"1px solid var(--gray-200)",boxShadow:"var(--shadow-sm)"},
+              h2:{fontSize:17,fontWeight:800,color:"var(--gray-800)",marginBottom:12,display:"flex",alignItems:"center",gap:8},
+              h3:{fontSize:14,fontWeight:700,color:"var(--primary)",marginBottom:8,marginTop:16},
+              p:{fontSize:13,color:"var(--gray-600)",lineHeight:1.8,marginBottom:8},
+              step:{display:"flex",gap:12,alignItems:"flex-start",padding:"10px 0",borderBottom:"1px solid var(--gray-100)"},
+              num:{width:28,height:28,borderRadius:"50%",background:"var(--primary)",color:"#fff",display:"flex",alignItems:"center",justifyContent:"center",fontSize:13,fontWeight:800,flexShrink:0},
+              tip:{padding:"12px 16px",background:"#fffbeb",borderRadius:"var(--radius-sm)",border:"1px solid #fde68a",fontSize:12,color:"#92400e",marginBottom:10,lineHeight:1.7},
+              warn:{padding:"12px 16px",background:"#fef2f2",borderRadius:"var(--radius-sm)",border:"1px solid #fecaca",fontSize:12,color:"#dc2626",marginBottom:10,lineHeight:1.7}};
+
+            return <>
+              <div style={{textAlign:"center",marginBottom:24}}>
+                <div style={{width:64,height:64,borderRadius:18,background:"linear-gradient(135deg,#6366f1,#10b981)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:30,fontWeight:900,color:"#fff",margin:"0 auto 14px",boxShadow:"0 4px 16px rgba(99,102,241,.25)"}}>📖</div>
+                <h1 style={{fontSize:22,fontWeight:800,color:"var(--gray-900)",marginBottom:4}}>지출관리 앱 사용 매뉴얼</h1>
+                <p style={{fontSize:13,color:"var(--gray-400)"}}>처음 사용하시는 분을 위한 단계별 안내서</p>
+              </div>
+
+              {/* 1. 시작하기 */}
+              <div style={MS.sec}>
+                <h2 style={MS.h2}><span>🚀</span> 1. 처음 시작하기</h2>
+                <p style={MS.p}>앱에 처음 접속하면 <strong>과(부서) 선택 화면</strong>이 나타납니다.</p>
+                <div style={MS.step}><span style={MS.num}>1</span><div><strong>기존 과 선택</strong> - 이미 등록된 과(예: 교육위원회)를 클릭하면 바로 시작<br/><span style={{fontSize:12,color:"var(--gray-400)"}}>카테고리, 예산, 공문 템플릿이 미리 설정되어 있습니다</span></div></div>
+                <div style={MS.step}><span style={MS.num}>2</span><div><strong>새 과 만들기</strong> - "+ 새 과(부서) 추가" 클릭<br/><span style={{fontSize:12,color:"var(--gray-400)"}}>과 이름 입력 → "기존 과 복사" 또는 "처음부터 만들기" 선택</span></div></div>
+                <div style={MS.tip}>💡 <strong>팁:</strong> 기존 과를 복사하면 카테고리, 예산, 공문 템플릿이 모두 복사되어 수정만 하면 됩니다!</div>
+              </div>
+
+              {/* 2. 데이터 업로드 */}
+              <div style={MS.sec}>
+                <h2 style={MS.h2}><span>📤</span> 2. 카드 사용내역 업로드</h2>
+                <p style={MS.p}>카드사 홈페이지에서 다운받은 <strong>사용내역조회 파일</strong>(CSV 또는 엑셀)을 업로드합니다.</p>
+                <div style={MS.step}><span style={MS.num}>1</span><div>좌측 <strong>☰ 메뉴</strong> → <strong>📤 업로드</strong> 클릭</div></div>
+                <div style={MS.step}><span style={MS.num}>2</span><div>파일을 <strong>드래그</strong>하거나 <strong>클릭하여 선택</strong></div></div>
+                <div style={MS.step}><span style={MS.num}>3</span><div>파일에서 <strong>승인일시, 금액, 가맹점명</strong>을 자동으로 추출합니다</div></div>
+                <div style={MS.step}><span style={MS.num}>4</span><div>이미 등록된 내역은 <strong>자동으로 중복 제외</strong>됩니다</div></div>
+                <div style={MS.tip}>💡 <strong>파일 형식:</strong> 반드시 "승인일시", "금액", "가맹점명" 열이 포함된 파일이어야 합니다.</div>
+              </div>
+
+              {/* 3. 분류하기 */}
+              <div style={MS.sec}>
+                <h2 style={MS.h2}><span>📋</span> 3. 사용내역 분류하기</h2>
+                <p style={MS.p}>업로드된 내역을 <strong>카테고리(통계목)</strong>별로 분류합니다.</p>
+                <div style={MS.step}><span style={MS.num}>1</span><div><strong>📋 사용내역 분류</strong> 메뉴로 이동</div></div>
+                <div style={MS.step}><span style={MS.num}>2</span><div>각 행의 <strong>"분류 선택"</strong> 드롭다운에서 해당 카테고리를 선택</div></div>
+                <div style={MS.step}><span style={MS.num}>3</span><div><strong>일괄 분류:</strong> 체크박스로 여러 건 선택 → 상단에서 카테고리 선택 → "적용" 클릭</div></div>
+                <div style={MS.step}><span style={MS.num}>4</span><div>필요한 <strong>추가 정보</strong>(인원, 사용내역 등)를 ✏️ 버튼으로 입력</div></div>
+                <div style={MS.tip}>💡 <strong>검색:</strong> 상단 검색창에서 가맹점명이나 날짜로 빠르게 찾을 수 있습니다.</div>
+              </div>
+
+              {/* 4. 사용내역 보기 */}
+              <div style={MS.sec}>
+                <h2 style={MS.h2}><span>📑</span> 4. 사용내역 보기 (미리보기)</h2>
+                <p style={MS.p}>분류된 내역을 카테고리별로 정리해서 보여줍니다.</p>
+                <h3 style={MS.h3}>셀 편집</h3>
+                <p style={MS.p}>표의 셀을 <strong>클릭하면 바로 수정</strong>할 수 있습니다. (일자, 금액, 장소, 사용내역 등)</p>
+                <h3 style={MS.h3}>한 건으로 묶기 (공문 생성)</h3>
+                <div style={MS.step}><span style={MS.num}>1</span><div>같이 묶을 내역의 <strong>체크박스</strong>를 선택 (2건 이상)</div></div>
+                <div style={MS.step}><span style={MS.num}>2</span><div>상단 <strong>"한 건으로 묶기"</strong> 버튼 클릭</div></div>
+                <div style={MS.step}><span style={MS.num}>3</span><div>공문 <strong>제목 선택</strong> → 회차 입력(필요시) → <strong>내용 확인 후 복사</strong></div></div>
+                <p style={MS.p}>예: 식당 1건 + 카페 3건 → 금액 합산, 장소는 "식당 외 1", 시간은 식당/카페 첫 결제시간</p>
+                <h3 style={MS.h3}>진행상태 관리</h3>
+                <p style={MS.p}>각 행의 <strong>공문/e호조</strong> 버튼으로 진행상태를 체크합니다.<br/>체크박스 선택 후 상단 일괄 버튼으로 여러 건을 한번에 체크할 수도 있습니다.</p>
+                <h3 style={MS.h3}>묶인 건 표시</h3>
+                <p style={MS.p}>같은 사용목적으로 묶인 건들은 <strong>좌측 색상 바</strong>와 <strong>테두리</strong>로 구분됩니다.</p>
+              </div>
+
+              {/* 5. 예산관리 */}
+              <div style={MS.sec}>
+                <h2 style={MS.h2}><span>💰</span> 5. 예산관리</h2>
+                <p style={MS.p}>카테고리별 예산을 <strong>연도별</strong>로 관리합니다.</p>
+                <div style={MS.step}><span style={MS.num}>1</span><div>상단에서 <strong>연도</strong>를 선택합니다 (예산은 단년도 기준)</div></div>
+                <div style={MS.step}><span style={MS.num}>2</span><div>예산액을 <strong>클릭하면 바로 수정</strong>할 수 있습니다</div></div>
+                <div style={MS.step}><span style={MS.num}>3</span><div>카테고리명도 <strong>클릭하여 수정</strong> 가능합니다</div></div>
+                <div style={MS.step}><span style={MS.num}>4</span><div>📋 <strong>메모 버튼</strong>으로 카테고리별 메모를 남길 수 있습니다</div></div>
+                <div style={MS.step}><span style={MS.num}>5</span><div>새 연도 시작 시 <strong>"전년도 예산 복사"</strong> 버튼으로 이전 예산을 가져옵니다</div></div>
+                <h3 style={MS.h3}>카테고리 추가/삭제</h3>
+                <p style={MS.p}>하단 폼에서 새 카테고리를 추가하고, 각 행의 ✕ 버튼으로 삭제할 수 있습니다.<br/>삭제 시 해당 카테고리의 데이터는 미분류로 변경됩니다 (삭제되지 않음).</p>
+              </div>
+
+              {/* 6. 공문 설정 */}
+              <div style={MS.sec}>
+                <h2 style={MS.h2}><span>📝</span> 6. 공문 설정</h2>
+                <p style={MS.p}>카테고리별로 공문 템플릿을 만들거나 수정합니다.</p>
+                <div style={MS.step}><span style={MS.num}>1</span><div>카테고리를 클릭하여 편집 화면 진입</div></div>
+                <div style={MS.step}><span style={MS.num}>2</span><div><strong>지출방법, 예산과목</strong> 등 공통 정보를 입력</div></div>
+                <div style={MS.step}><span style={MS.num}>3</span><div><strong>"+ 제목 추가"</strong>로 공문 제목과 본문 서두를 입력</div></div>
+                <div style={MS.step}><span style={MS.num}>4</span><div>기존 제목은 <strong>"수정"</strong> 버튼으로 수정 가능</div></div>
+                <div style={MS.step}><span style={MS.num}>5</span><div><strong>"저장"</strong> 클릭으로 완료</div></div>
+                <div style={MS.tip}>💡 <strong>자동 치환:</strong> 본문에 {"{meal}"}을 넣으면 시간에 따라 오찬/만찬 자동 변환, N은 회차 자동 입력</div>
+              </div>
+
+              {/* 7. 정보공개 */}
+              <div style={MS.sec}>
+                <h2 style={MS.h2}><span>📊</span> 7. 정보공개</h2>
+                <p style={MS.p}>월별 지출 내역을 정보공개용 서식으로 내보냅니다.</p>
+                <div style={MS.step}><span style={MS.num}>1</span><div>상단에서 <strong>연도와 월</strong>을 선택</div></div>
+                <div style={MS.step}><span style={MS.num}>2</span><div><strong>집행내역</strong>(일반지출) / <strong>시책추진업무추진비</strong> 탭 전환</div></div>
+                <div style={MS.step}><span style={MS.num}>3</span><div>사용목적 입력란에서 <strong>직접 입력</strong> (공문 생성 시 자동 입력됨)</div></div>
+                <div style={MS.step}><span style={MS.num}>4</span><div><strong>"📥 정보공개 엑셀 다운로드"</strong> 클릭</div></div>
+              </div>
+
+              {/* 8. 백업 */}
+              <div style={MS.sec}>
+                <h2 style={MS.h2}><span>💾</span> 8. 데이터 백업 (중요!)</h2>
+                <div style={MS.warn}>⚠️ <strong>주의:</strong> 모든 데이터는 브라우저에 저장됩니다. 브라우저 캐시 삭제, 브라우저 재설치, PC 포맷 시 데이터가 삭제됩니다!</div>
+                <h3 style={MS.h3}>백업하기</h3>
+                <p style={MS.p}>☰ 메뉴 → <strong>💾 파일 백업</strong> → JSON 파일이 다운로드됩니다.</p>
+                <h3 style={MS.h3}>복원하기</h3>
+                <p style={MS.p}>☰ 메뉴 → <strong>📂 백업 불러오기</strong> → 백업 파일 선택 → 자동으로 병합됩니다.</p>
+                <div style={MS.tip}>💡 <strong>권장:</strong> 주 1회 파일 백업을 습관화하세요. 다른 PC로 옮길 때도 백업 파일을 사용합니다.</div>
+                <h3 style={MS.h3}>데이터가 삭제되는 경우</h3>
+                <div style={{fontSize:12,lineHeight:1.8,color:"var(--gray-600)"}}>
+                  <div style={{display:"flex",gap:8,padding:"4px 0"}}><span style={{color:"#ef4444"}}>X</span> 브라우저 캐시/쿠키 삭제</div>
+                  <div style={{display:"flex",gap:8,padding:"4px 0"}}><span style={{color:"#ef4444"}}>X</span> 시크릿(프라이빗) 모드에서 사용 후 창 닫기</div>
+                  <div style={{display:"flex",gap:8,padding:"4px 0"}}><span style={{color:"#ef4444"}}>X</span> 브라우저 재설치 또는 PC 포맷</div>
+                  <div style={{display:"flex",gap:8,padding:"4px 0"}}><span style={{color:"#ef4444"}}>X</span> 다른 브라우저/기기에서는 데이터가 별도</div>
+                  <div style={{display:"flex",gap:8,padding:"4px 0"}}><span style={{color:"#16a34a"}}>O</span> 일반 탭 닫기, PC 재부팅 → 데이터 유지</div>
+                  <div style={{display:"flex",gap:8,padding:"4px 0"}}><span style={{color:"#16a34a"}}>O</span> Vercel 재배포 → 데이터 유지</div>
+                </div>
+              </div>
+
+              {/* 9. 기타 */}
+              <div style={MS.sec}>
+                <h2 style={MS.h2}><span>⚙️</span> 9. 기타 기능</h2>
+                <h3 style={MS.h3}>엑셀 내보내기</h3>
+                <p style={MS.p}>☰ 메뉴 → <strong>📥 엑셀 내보내기</strong> → 일반지출/일상경비 시트별 정리된 엑셀 파일 다운로드</p>
+                <h3 style={MS.h3}>과(부서) 변경</h3>
+                <p style={MS.p}>☰ 메뉴 → <strong>🔄 과 변경</strong> → 프리셋 선택 화면으로 (기존 데이터 보존)</p>
+                <h3 style={MS.h3}>프리셋 삭제</h3>
+                <p style={MS.p}>☰ 메뉴 → <strong>🗑️ 프리셋 삭제</strong> → 비밀번호 입력 후 해당 과의 모든 데이터 삭제</p>
+                <h3 style={MS.h3}>초기화</h3>
+                <p style={MS.p}>☰ 메뉴 → <strong>🗑️ 초기화</strong> → 현재 과의 사용내역/예산/공문설정 전부 삭제 (카테고리 구조는 유지)</p>
+                <h3 style={MS.h3}>정렬</h3>
+                <p style={MS.p}>사용내역 보기에서 <strong>"▼ 최신순 / ▲ 오래된순"</strong> 버튼으로 정렬 변경</p>
+              </div>
+
+              <div style={{textAlign:"center",padding:"20px 0",color:"var(--gray-300)",fontSize:12}}>
+                지출관리 앱 v2.0 | 문의사항은 관리자에게 연락하세요
+              </div>
+            </>;
+          })()}
+        </div>}
 
         {/* DOC TEMPLATE SETUP */}
         {view==="docSetup"&&(()=>{
