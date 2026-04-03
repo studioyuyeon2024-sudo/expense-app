@@ -1130,6 +1130,18 @@ function App() {
                             공문 생성{selCount>0?` (${selCount}건)`:""}
                           </button>;
                         })()}
+                        <button onClick={()=>{
+                          const wb = XLSX.utils.book_new();
+                          const hdr = cat.fields;
+                          const data = catRows.map(r=>cat.fields.map(f=>cellVal(r,f,cat)));
+                          const ws = XLSX.utils.aoa_to_sheet([hdr,...data]);
+                          ws["!cols"] = hdr.map(h=>({wch:h.includes("내역")?30:h.includes("일")?20:h==="장소"?22:14}));
+                          XLSX.utils.book_append_sheet(wb,ws,cat.name.slice(0,31));
+                          XLSX.writeFile(wb,`${cat.name}_${new Date().toISOString().slice(0,10)}.xlsx`);
+                          notify(`${cat.name} 엑셀 다운로드 완료!`);
+                        }} style={{padding:"5px 12px",background:"#fff",color:"#64748b",border:"1px solid #e2e8f0",borderRadius:6,fontSize:11,fontWeight:600,fontFamily:"inherit"}}>
+                          📥 엑셀
+                        </button>
                       </div>
                       {/* Budget bar */}
                       {(()=>{
@@ -1225,7 +1237,15 @@ function App() {
                                 );
                               })}
                               <td style={{...S.pvTd,whiteSpace:"nowrap"}}>
-                                {DOC_TEMPLATES[cat.id] && <button onClick={()=>openDocModal(row)} style={{...S.tiny,color:"#6366f1",fontSize:14}} title="공문 생성">📄</button>}
+                                {DOC_TEMPLATES[cat.id] && (()=>{
+                                  const missing = [];
+                                  if(!row.extra?.["인원"]) missing.push("인원");
+                                  if(!row.extra?.["사용목적"]) missing.push("사용목적");
+                                  return <>
+                                    {missing.length>0 && <span title={`미입력: ${missing.join(", ")}`} style={{color:"#f59e0b",fontSize:12,cursor:"help",marginRight:2}}>⚠</span>}
+                                    <button onClick={()=>openDocModal(row)} style={{...S.tiny,color:"#6366f1",fontSize:14}} title="공문 생성">📄</button>
+                                  </>;
+                                })()}
                                 <button onClick={()=>del(row.id)} style={{...S.tiny,color:"#ef4444",opacity:.5}} title="삭제"
                                   onMouseEnter={e=>e.currentTarget.style.opacity="1"} onMouseLeave={e=>e.currentTarget.style.opacity=".5"}>✕</button>
                               </td>
