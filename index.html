@@ -1253,10 +1253,9 @@ function App() {
                           <span style={{fontSize:14,fontWeight:700,color:"#1e293b"}}>{getCatName(cat.id)}</span>
                           <span style={{fontSize:11,color:"#94a3b8",background:"#fff",padding:"2px 8px",borderRadius:10,fontWeight:600}}>{catRows.length}건</span>
                         </div>
-                        {DOC_TEMPLATES[cat.id] && (()=>{
+                        {(()=>{
                           const selCount = catRows.filter(r=>docSelected.has(r.id)).length;
                           const selIds = new Set(catRows.filter(r=>docSelected.has(r.id)).map(r=>r.id));
-                          // 선택된 행들의 진행상태 확인
                           const selRows_ = catRows.filter(r=>selIds.has(r.id));
                           const allDoc = selRows_.length>0 && selRows_.every(r=>(r.extra?.["진행상태"]||"").includes("공문"));
                           const allAppr = selRows_.length>0 && selRows_.every(r=>(r.extra?.["진행상태"]||"").includes("결재"));
@@ -1273,7 +1272,7 @@ function App() {
                             persist(updated);
                           };
                           return <div style={{display:"flex",gap:6,alignItems:"center"}}>
-                            <button disabled={selCount<1}
+                            {DOC_TEMPLATES[cat.id] && <button disabled={selCount<1}
                               onClick={()=>{
                                 const selRows = catRows.filter(r=>docSelected.has(r.id));
                                 if(selRows.length===1) openDocModal(selRows[0]);
@@ -1282,9 +1281,9 @@ function App() {
                               style={{padding:"5px 14px",background:selCount>=1?"#6366f1":"#e2e8f0",color:selCount>=1?"#fff":"#94a3b8",
                                 border:"none",borderRadius:6,fontSize:11.5,fontWeight:700,fontFamily:"inherit"}}>
                               한 건으로 묶기{selCount>0?` (${selCount}건)`:""}
-                            </button>
+                            </button>}
                             {selCount>=1 && <>
-                              <span style={{color:"var(--gray-300)",fontSize:12}}>│</span>
+                              {DOC_TEMPLATES[cat.id] && <span style={{color:"var(--gray-300)",fontSize:12}}>│</span>}
                               <button onClick={()=>batchStatus("공문")}
                                 style={{padding:"3px 10px",borderRadius:4,fontSize:10,fontWeight:700,border:"1px solid",cursor:"pointer",fontFamily:"inherit",transition:"all .1s",
                                   background:allDoc?"#f0fdf4":"#fff",color:allDoc?"#16a34a":"#64748b",borderColor:allDoc?"#86efac":"#d1d5db"}}>
@@ -1373,7 +1372,7 @@ function App() {
                       return <div style={{overflowX:"auto"}}>
                       <table style={{width:"100%",borderCollapse:"collapse",fontSize:13,tableLayout:"fixed"}}>
                         <colgroup>
-                          {DOC_TEMPLATES[cat.id] && <col style={{width:34}}/>}
+                          <col style={{width:34}}/>
                           <col style={{width:36}}/>
                           {cat.fields.map((f,fi)=>{
                             const isAmt = f==="금액"||f==="지출"||f===cat.amountField;
@@ -1391,10 +1390,10 @@ function App() {
                         </colgroup>
                         <thead>
                           <tr>
-                            {DOC_TEMPLATES[cat.id] && <th style={{...S.pvTh,width:34,textAlign:"center"}}>
+                            <th style={{...S.pvTh,width:34,textAlign:"center"}}>
                               <input type="checkbox" checked={catRows.length>0&&catRows.every(r=>docSelected.has(r.id))}
                                 onChange={()=>{const ns=new Set(docSelected);const allSel=catRows.every(r=>ns.has(r.id));catRows.forEach(r=>{allSel?ns.delete(r.id):ns.add(r.id);});setDocSelected(ns);}}/>
-                            </th>}
+                            </th>
                             <th style={{...S.pvTh,width:36,textAlign:"center"}}>#</th>
                             {cat.fields.map((f,fi)=>(
                               <th key={fi} style={{...S.pvTh,...(f==="금액"||f==="지출"||f===cat.amountField?{textAlign:"right"}:{})}}>{f}</th>
@@ -1422,12 +1421,11 @@ function App() {
                             }}
                               onMouseEnter={e=>{if(!docSelected.has(row.id))e.currentTarget.style.background=isBundled?(bColor+"14"):"#f5f6ff";}}
                               onMouseLeave={e=>{if(!docSelected.has(row.id))e.currentTarget.style.background=isBundled?(bColor+"08"):(idx%2===0?"#fff":"#fafafc");}}>
-                              {DOC_TEMPLATES[cat.id] && <td style={{...S.pvTd,textAlign:"center",
+                              <td style={{...S.pvTd,textAlign:"center",
                                 borderLeft:isBundled?`3px solid ${bColor}`:"3px solid transparent"}}>
                                 <input type="checkbox" checked={docSelected.has(row.id)} onChange={()=>{const ns=new Set(docSelected);ns.has(row.id)?ns.delete(row.id):ns.add(row.id);setDocSelected(ns);}}/>
-                              </td>}
-                              <td style={{...S.pvTd,textAlign:"center",color:isBundled?bColor:"#b0b8c4",fontSize:11,fontWeight:700,
-                                ...(!DOC_TEMPLATES[cat.id]?{borderLeft:isBundled?`3px solid ${bColor}`:"3px solid transparent"}:{})}}>{idx+1}</td>
+                              </td>
+                              <td style={{...S.pvTd,textAlign:"center",color:isBundled?bColor:"#b0b8c4",fontSize:11,fontWeight:700}}>{idx+1}</td>
                               {cat.fields.map((f,fi)=>{
                                 const val = cellVal(row,f,cat);
                                 const isAmt = f==="금액"||f==="지출"||f===cat.amountField;
@@ -1503,7 +1501,7 @@ function App() {
                         </tbody>
                         <tfoot>
                           <tr style={{background:lightBg}}>
-                            {DOC_TEMPLATES[cat.id] && <td style={S.pvTd}/>}
+                            <td style={S.pvTd}/>
                             <td style={{...S.pvTd,textAlign:"center",fontWeight:700,color:accent}}>합계</td>
                             {cat.fields.map((f,fi)=>{
                               const isAmt = f==="금액"||f==="지출"||f===cat.amountField;
