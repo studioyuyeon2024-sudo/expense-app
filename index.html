@@ -13,6 +13,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.9/babel.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <style>
   :root{
     --mono:'JetBrains Mono',monospace;
@@ -59,6 +60,60 @@
 <div id="root"></div>
 <script type="text/babel">
 const {useState, useCallback, useRef, useEffect, useMemo} = React;
+
+// ─── Supabase ─────────────────────────────────────────
+const SUPABASE_URL = "https://jupyeldwarunpepudhpy.supabase.co";
+const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp1cHllbGR3YXJ1bnBlcHVkaHB5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUxOTk0NDIsImV4cCI6MjA5MDc3NTQ0Mn0.Nd5RXuRwju0GHlzFPWcEumlV8M835FqaxmUBDiRpgfg";
+const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+// Supabase DB 함수들
+const ADMIN_PASSWORD = "admin0922";
+let _syncTimer = null;
+
+async function dbSaveData(department, data) {
+  try {
+    const { error } = await supabase.from("expense_data").upsert({
+      department, data, updated_at: new Date().toISOString()
+    }, { onConflict: "department" });
+    if (error) console.error("DB 저장 오류:", error);
+  } catch (e) { console.error("DB 연결 오류:", e); }
+}
+
+async function dbLoadData(department) {
+  try {
+    const { data, error } = await supabase.from("expense_data").select("data").eq("department", department).single();
+    if (error || !data) return null;
+    return data.data;
+  } catch { return null; }
+}
+
+async function dbLoadAllDepartments() {
+  try {
+    const { data, error } = await supabase.from("expense_data").select("department, data, updated_at").order("department");
+    if (error) return [];
+    return data || [];
+  } catch { return []; }
+}
+
+async function dbGetDepartment(name) {
+  try {
+    const { data } = await supabase.from("departments").select("*").eq("name", name).single();
+    return data;
+  } catch { return null; }
+}
+
+async function dbRegisterDepartment(name, password) {
+  try {
+    const { error } = await supabase.from("departments").upsert({ name, password }, { onConflict: "name" });
+    return !error;
+  } catch { return false; }
+}
+
+// 디바운스 동기화 (persist 후 1초 대기 후 DB 저장)
+function scheduleSyncToDB(department, data) {
+  if (_syncTimer) clearTimeout(_syncTimer);
+  _syncTimer = setTimeout(() => { dbSaveData(department, data); }, 1000);
+}
 
 // ─── Preset System ────────────────────────────────────
 const PRESETS = {
@@ -585,14 +640,28 @@ function App() {
 
   useEffect(() => {
     if (!presetName) { setLoading(false); return; }
-    const d = loadData(presetName);
-    setRows(d.rows||[]);
-    const mb = migrateBudgets(d.budgets||{});
-    const yr = String(new Date().getFullYear());
-    setBudgets({...mb, [yr]: {...DEFAULT_BUDGETS, ...(mb[yr]||{})}});
-    setCatNames(d.catNames||{});
-    setCustomDocTmpls(d.customDocTmpls||{});
-    setLoading(false);
+    const localD = loadData(presetName);
+    // DB에서도 로드 시도 후 병합
+    (async () => {
+      const dbD = await dbLoadData(presetName);
+      const d = dbD || localD; // DB 데이터 우선, 없으면 localStorage
+      const localRows = localD.rows || [];
+      const dbRows = d.rows || [];
+      // localStorage에만 있는 행 병합
+      const keys = new Set(dbRows.map(r=>`${r.date}|${r.amount}|${r.place}`));
+      const merged = [...dbRows, ...localRows.filter(r=>!keys.has(`${r.date}|${r.amount}|${r.place}`))];
+      setRows(merged);
+      const mb = migrateBudgets(d.budgets||{});
+      const yr = String(new Date().getFullYear());
+      setBudgets({...mb, [yr]: {...DEFAULT_BUDGETS, ...(mb[yr]||{})}});
+      setCatNames({...(d.catNames||{}), ...(localD.catNames||{})});
+      setCustomDocTmpls({...(d.customDocTmpls||{}), ...(localD.customDocTmpls||{})});
+      setLoading(false);
+      // 병합 결과를 양쪽에 저장
+      const savePayload = {rows:merged, budgets:{...mb, [yr]: {...DEFAULT_BUDGETS, ...(mb[yr]||{})}}, catNames:{...(d.catNames||{}), ...(localD.catNames||{})}, customDocTmpls:{...(d.customDocTmpls||{}), ...(localD.customDocTmpls||{})}};
+      saveData(presetName, savePayload);
+      dbSaveData(presetName, savePayload);
+    })();
   }, []);
 
   const persist = useCallback((r, b, cn, dt) => {
@@ -605,7 +674,10 @@ function App() {
     if(b !== undefined) setBudgets(newBudgets);
     if(cn !== undefined) setCatNames(newCatNames);
     if(dt !== undefined) setCustomDocTmpls(newDocTmpls);
-    saveData(presetName, {rows:newRows, budgets:newBudgets, catNames:newCatNames, customDocTmpls:newDocTmpls});
+    const savePayload = {rows:newRows, budgets:newBudgets, catNames:newCatNames, customDocTmpls:newDocTmpls};
+    saveData(presetName, savePayload);
+    // Supabase DB에 디바운스 동기화
+    scheduleSyncToDB(presetName, savePayload);
   }, [rows, budgets, catNames, customDocTmpls, presetName]);
 
   // Helper: get category display name (override or default)
@@ -997,16 +1069,146 @@ function App() {
   };
 
   // Preset selection screen
+  // 과 선택 시 비밀번호 확인
+  const [loginTarget, setLoginTarget] = useState(null); // 비밀번호 입력 중인 과 이름
+  const [loginPw, setLoginPw] = useState("");
+  const [loginError, setLoginError] = useState("");
+  const [adminMode, setAdminMode] = useState(false);
+  const [adminData, setAdminData] = useState([]); // 관리자 통합 조회 데이터
+
+  const handlePresetLogin = async (name) => {
+    const dept = await dbGetDepartment(name);
+    if (!dept) {
+      // DB에 없으면 비밀번호 설정 없이 바로 진입 (첫 사용)
+      await dbRegisterDepartment(name, "0000");
+      selectPreset(name);
+      return;
+    }
+    if (dept.password === "0000") {
+      // 기본 비밀번호면 바로 진입
+      selectPreset(name);
+      return;
+    }
+    // 비밀번호 설정된 과 → 입력 요구
+    setLoginTarget(name);
+    setLoginPw("");
+    setLoginError("");
+  };
+
+  const confirmLogin = async () => {
+    const dept = await dbGetDepartment(loginTarget);
+    if (dept && dept.password === loginPw) {
+      setLoginTarget(null);
+      selectPreset(loginTarget);
+    } else {
+      setLoginError("비밀번호가 틀렸습니다");
+    }
+  };
+
+  const enterAdminMode = async () => {
+    const pw = prompt("관리자 비밀번호를 입력하세요:");
+    if (pw !== ADMIN_PASSWORD) { alert("비밀번호가 틀렸습니다"); return; }
+    const data = await dbLoadAllDepartments();
+    setAdminData(data);
+    setAdminMode(true);
+  };
+
   if(!presetName) return (
     <div style={{display:"flex",alignItems:"center",justifyContent:"center",minHeight:"100vh",background:"linear-gradient(135deg,#eef1f8 0%,#e0e7ff 50%,#ecfdf5 100%)",padding:20}}>
-      <div style={{background:"rgba(255,255,255,.92)",backdropFilter:"blur(20px)",borderRadius:24,padding:"52px 44px",maxWidth:480,width:"100%",boxShadow:"0 12px 48px rgba(0,0,0,.1),0 2px 8px rgba(0,0,0,.04)",animation:"scaleIn .35s ease"}}>
-        {setupMode === "create" ? <PresetCreator /> : (<div style={{textAlign:"center"}}>
+      <div style={{background:"rgba(255,255,255,.92)",backdropFilter:"blur(20px)",borderRadius:24,padding:"52px 44px",maxWidth:adminMode?900:480,width:"100%",boxShadow:"0 12px 48px rgba(0,0,0,.1),0 2px 8px rgba(0,0,0,.04)",animation:"scaleIn .35s ease",transition:"max-width .3s"}}>
+        {adminMode ? (
+          /* 관리자 통합 대시보드 */
+          <div>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:24}}>
+              <div>
+                <h1 style={{fontSize:22,fontWeight:800,color:"var(--gray-900)",marginBottom:4}}>관리자 대시보드</h1>
+                <p style={{fontSize:13,color:"var(--gray-400)"}}>전체 과 데이터 통합 조회</p>
+              </div>
+              <button onClick={()=>{setAdminMode(false);setAdminData([]);}} style={{padding:"8px 16px",border:"1px solid var(--gray-200)",borderRadius:8,background:"#fff",fontSize:12,fontWeight:600,fontFamily:"inherit",color:"var(--gray-500)"}}>← 돌아가기</button>
+            </div>
+            {!adminData.length ? <p style={{textAlign:"center",color:"var(--gray-400)",padding:40}}>등록된 과 데이터가 없습니다</p> : (
+              <div style={{display:"flex",flexDirection:"column",gap:16}}>
+                {/* 전체 요약 */}
+                <div style={{display:"grid",gridTemplateColumns:`repeat(${Math.min(adminData.length,4)},1fr)`,gap:12}}>
+                  {adminData.map(dept=>{
+                    const d = dept.data||{};
+                    const r = d.rows||[];
+                    const total = r.reduce((s,x)=>s+x.amount,0);
+                    const classified = r.filter(x=>x.catId).length;
+                    return <div key={dept.department} style={{padding:"16px 18px",borderRadius:"var(--radius-lg)",background:"linear-gradient(135deg,#1e1b4b,#312e81)",color:"#fff",boxShadow:"var(--shadow-md)"}}>
+                      <div style={{fontSize:11,opacity:.6,marginBottom:6}}>{dept.department}</div>
+                      <div style={{fontFamily:"var(--mono)",fontSize:18,fontWeight:800}}>{fmt(total)}<span style={{fontSize:11,opacity:.5}}>원</span></div>
+                      <div style={{fontSize:11,opacity:.5,marginTop:4}}>{r.length}건 (분류 {classified}건)</div>
+                    </div>;
+                  })}
+                </div>
+
+                {/* 과별 상세 */}
+                {adminData.map(dept=>{
+                  const d = dept.data||{};
+                  const r = (d.rows||[]).sort((a,b)=>b.date?.localeCompare(a.date));
+                  const budgets_ = d.budgets||{};
+                  const catNames_ = d.catNames||{};
+                  const yr = String(new Date().getFullYear());
+                  const yrB = budgets_[yr]||{};
+                  if(!r.length) return null;
+                  return <div key={dept.department} style={{background:"#fff",borderRadius:"var(--radius-lg)",border:"1px solid var(--gray-200)",overflow:"hidden",boxShadow:"var(--shadow-sm)"}}>
+                    <div style={{padding:"14px 18px",background:"var(--gray-50)",borderBottom:"1px solid var(--gray-200)",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                      <div style={{display:"flex",alignItems:"center",gap:8}}>
+                        <span style={{fontSize:16}}>🏛️</span>
+                        <span style={{fontSize:15,fontWeight:700,color:"var(--gray-800)"}}>{dept.department}</span>
+                        <span style={{fontSize:11,color:"var(--gray-400)",background:"var(--gray-100)",padding:"2px 8px",borderRadius:10}}>{r.length}건</span>
+                      </div>
+                      <span style={{fontSize:11,color:"var(--gray-400)"}}>최근 동기화: {dept.updated_at ? new Date(dept.updated_at).toLocaleString("ko-KR") : "-"}</span>
+                    </div>
+                    <div style={{overflowX:"auto",maxHeight:300,overflowY:"auto"}}>
+                      <table style={{width:"100%",borderCollapse:"collapse",fontSize:12}}>
+                        <thead><tr style={{background:"var(--gray-50)"}}>
+                          <th style={{padding:"7px 10px",textAlign:"left",fontWeight:700,fontSize:10.5,color:"var(--gray-400)",borderBottom:"1px solid var(--gray-200)"}}>일자</th>
+                          <th style={{padding:"7px 10px",textAlign:"right",fontWeight:700,fontSize:10.5,color:"var(--gray-400)",borderBottom:"1px solid var(--gray-200)"}}>금액</th>
+                          <th style={{padding:"7px 10px",textAlign:"left",fontWeight:700,fontSize:10.5,color:"var(--gray-400)",borderBottom:"1px solid var(--gray-200)"}}>가맹점</th>
+                          <th style={{padding:"7px 10px",textAlign:"left",fontWeight:700,fontSize:10.5,color:"var(--gray-400)",borderBottom:"1px solid var(--gray-200)"}}>분류</th>
+                          <th style={{padding:"7px 10px",textAlign:"left",fontWeight:700,fontSize:10.5,color:"var(--gray-400)",borderBottom:"1px solid var(--gray-200)"}}>진행</th>
+                        </tr></thead>
+                        <tbody>{r.slice(0,20).map((row,i)=>(
+                          <tr key={i} style={{borderBottom:"1px solid var(--gray-100)"}}>
+                            <td style={{padding:"6px 10px",whiteSpace:"nowrap",color:"var(--gray-600)"}}>{row.date?.split(" ")[0]}</td>
+                            <td style={{padding:"6px 10px",textAlign:"right",fontWeight:700,fontFamily:"var(--mono)"}}>{fmt(row.amount)}원</td>
+                            <td style={{padding:"6px 10px",fontWeight:600,maxWidth:120,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{row.place}</td>
+                            <td style={{padding:"6px 10px"}}>{row.catId ? <span style={{fontSize:10,padding:"2px 6px",borderRadius:3,background:row.tab==="일반지출"?"#dbeafe":"#d1fae5",color:row.tab==="일반지출"?"#1d4ed8":"#047857"}}>{catNames_[row.catId]||row.catId}</span> : <span style={{color:"var(--gray-300)",fontSize:11}}>미분류</span>}</td>
+                            <td style={{padding:"6px 10px",fontSize:11,color:"var(--gray-400)"}}>{row.extra?.["진행상태"]||"-"}</td>
+                          </tr>
+                        ))}</tbody>
+                      </table>
+                      {r.length>20 && <div style={{textAlign:"center",padding:8,fontSize:11,color:"var(--gray-400)"}}>외 {r.length-20}건 더...</div>}
+                    </div>
+                  </div>;
+                })}
+              </div>
+            )}
+          </div>
+        ) : loginTarget ? (
+          /* 비밀번호 입력 */
+          <div style={{textAlign:"center"}}>
+            <div style={{width:48,height:48,borderRadius:14,background:"linear-gradient(135deg,#eef2ff,#e0e7ff)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:22,margin:"0 auto 16px"}}>🔒</div>
+            <h2 style={{fontSize:18,fontWeight:700,marginBottom:6,color:"var(--gray-800)"}}>{loginTarget}</h2>
+            <p style={{fontSize:13,color:"var(--gray-400)",marginBottom:20}}>비밀번호를 입력하세요</p>
+            <input type="password" value={loginPw} onChange={e=>{setLoginPw(e.target.value);setLoginError("");}} placeholder="비밀번호"
+              style={{width:"100%",padding:"14px 18px",border:`2px solid ${loginError?"#ef4444":"var(--gray-200)"}`,borderRadius:10,fontSize:16,fontFamily:"inherit",textAlign:"center",marginBottom:8,letterSpacing:"4px"}}
+              onKeyDown={e=>{if(e.key==="Enter")confirmLogin();}} autoFocus/>
+            {loginError && <p style={{fontSize:12,color:"#ef4444",marginBottom:8}}>{loginError}</p>}
+            <div style={{display:"flex",gap:10,justifyContent:"center",marginTop:12}}>
+              <button onClick={()=>setLoginTarget(null)} style={{padding:"10px 20px",border:"1px solid var(--gray-200)",borderRadius:8,background:"#fff",fontSize:13,fontWeight:600,fontFamily:"inherit",color:"var(--gray-500)"}}>취소</button>
+              <button onClick={confirmLogin} style={{padding:"10px 24px",background:"var(--primary)",color:"#fff",border:"none",borderRadius:8,fontSize:13,fontWeight:700,fontFamily:"inherit"}}>확인</button>
+            </div>
+          </div>
+        ) : setupMode === "create" ? <PresetCreator /> : (<div style={{textAlign:"center"}}>
           <div style={{width:64,height:64,borderRadius:18,background:"linear-gradient(135deg,#6366f1,#10b981)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:30,fontWeight:900,color:"#fff",margin:"0 auto 22px",boxShadow:"0 8px 24px rgba(99,102,241,.25)"}}>₩</div>
           <h1 style={{fontSize:24,fontWeight:800,marginBottom:6,letterSpacing:"-0.5px",color:"var(--gray-900)"}}>지출관리</h1>
           <p style={{fontSize:14,color:"var(--gray-400)",marginBottom:32,fontWeight:500}}>사용할 과(부서)를 선택하세요</p>
           <div style={{display:"flex",flexDirection:"column",gap:10}}>
             {getAllPresetNames().map(name=>(
-              <button key={name} onClick={()=>selectPreset(name)}
+              <button key={name} onClick={()=>handlePresetLogin(name)}
                 style={{padding:"18px 22px",border:"2px solid var(--gray-200)",borderRadius:"var(--radius-lg)",background:"#fff",fontSize:15,fontWeight:600,
                   fontFamily:"inherit",color:"var(--gray-800)",cursor:"pointer",transition:"all var(--transition-fast)",boxShadow:"var(--shadow-sm)",
                   display:"flex",alignItems:"center",gap:12}}
@@ -1025,7 +1227,12 @@ function App() {
               + 새 과(부서) 추가
             </button>
           </div>
-          <p style={{fontSize:11,color:"var(--gray-300)",marginTop:28,fontWeight:500}}>선택 후 자동으로 기억됩니다</p>
+          <div style={{marginTop:28,display:"flex",justifyContent:"center"}}>
+            <button onClick={enterAdminMode} style={{fontSize:12,color:"var(--gray-300)",border:"none",background:"none",fontFamily:"inherit",cursor:"pointer",padding:"6px 12px",borderRadius:6,transition:"all var(--transition-fast)"}}
+              onMouseEnter={e=>e.currentTarget.style.color="var(--gray-500)"} onMouseLeave={e=>e.currentTarget.style.color="var(--gray-300)"}>
+              🔐 관리자 모드
+            </button>
+          </div>
         </div>)}
       </div>
     </div>
@@ -1182,6 +1389,14 @@ function App() {
           <input ref={jsonRef} type="file" accept=".json" style={{display:"none"}} onChange={e=>{loadFromFile(e.target.files[0]);e.target.value="";}}/>
           <div style={{height:1,background:"rgba(255,255,255,.06)",margin:"4px 12px"}}/>
           <button style={{...S.ns,color:"#f87171"}} onClick={resetAll}>🗑️ 초기화</button>
+          <button style={S.ns} onClick={async()=>{
+            const newPw=prompt("새 비밀번호를 설정하세요 (4자리 이상):\n비밀번호 없이 사용하려면 0000 입력");
+            if(newPw===null) return;
+            if(newPw.length<4){alert("4자리 이상 입력하세요");return;}
+            const ok=await dbRegisterDepartment(presetName,newPw);
+            if(ok) notify(newPw==="0000"?"비밀번호 해제됨":"비밀번호 변경 완료!");
+            else notify("변경 실패","err");
+          }}>🔑 비밀번호 변경</button>
           <button style={{...S.ns,color:"#94a3b8"}} onClick={()=>{if(confirm("과(부서)를 변경하시겠습니까?\n현재 과의 데이터는 보존됩니다.")){savePresetChoice("");setPresetName("");setLoading(false);}}}>🔄 과 변경</button>
           <button style={{...S.ns,color:"#f87171"}} onClick={()=>{
             const pw = prompt(`"${presetName}" 프리셋을 완전히 삭제하시겠습니까?\n모든 데이터(사용내역, 예산, 공문설정)가 삭제됩니다.\n\n비밀번호를 입력하세요:`);
