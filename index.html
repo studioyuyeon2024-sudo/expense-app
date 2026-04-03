@@ -64,13 +64,15 @@ const {useState, useCallback, useRef, useEffect, useMemo} = React;
 // ─── Supabase ─────────────────────────────────────────
 const SUPABASE_URL = "https://jupyeldwarunpepudhpy.supabase.co";
 const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp1cHllbGR3YXJ1bnBlcHVkaHB5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUxOTk0NDIsImV4cCI6MjA5MDc3NTQ0Mn0.Nd5RXuRwju0GHlzFPWcEumlV8M835FqaxmUBDiRpgfg";
-const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+let supabase = null;
+try { supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY); } catch(e) { console.error("Supabase 초기화 실패:", e); }
 
 // Supabase DB 함수들
 const ADMIN_PASSWORD = "admin0922";
 let _syncTimer = null;
 
 async function dbSaveData(department, data) {
+  if (!supabase) return;
   try {
     const { error } = await supabase.from("expense_data").upsert({
       department, data, updated_at: new Date().toISOString()
@@ -80,6 +82,7 @@ async function dbSaveData(department, data) {
 }
 
 async function dbLoadData(department) {
+  if (!supabase) return null;
   try {
     const { data, error } = await supabase.from("expense_data").select("data").eq("department", department).single();
     if (error || !data) return null;
@@ -88,6 +91,7 @@ async function dbLoadData(department) {
 }
 
 async function dbLoadAllDepartments() {
+  if (!supabase) return [];
   try {
     const { data, error } = await supabase.from("expense_data").select("department, data, updated_at").order("department");
     if (error) return [];
@@ -96,6 +100,7 @@ async function dbLoadAllDepartments() {
 }
 
 async function dbGetDepartment(name) {
+  if (!supabase) return null;
   try {
     const { data } = await supabase.from("departments").select("*").eq("name", name).single();
     return data;
@@ -103,6 +108,7 @@ async function dbGetDepartment(name) {
 }
 
 async function dbRegisterDepartment(name, password) {
+  if (!supabase) return false;
   try {
     const { error } = await supabase.from("departments").upsert({ name, password }, { onConflict: "name" });
     return !error;
@@ -643,24 +649,34 @@ function App() {
     const localD = loadData(presetName);
     // DB에서도 로드 시도 후 병합
     (async () => {
-      const dbD = await dbLoadData(presetName);
-      const d = dbD || localD; // DB 데이터 우선, 없으면 localStorage
-      const localRows = localD.rows || [];
-      const dbRows = d.rows || [];
-      // localStorage에만 있는 행 병합
-      const keys = new Set(dbRows.map(r=>`${r.date}|${r.amount}|${r.place}`));
-      const merged = [...dbRows, ...localRows.filter(r=>!keys.has(`${r.date}|${r.amount}|${r.place}`))];
-      setRows(merged);
-      const mb = migrateBudgets(d.budgets||{});
-      const yr = String(new Date().getFullYear());
-      setBudgets({...mb, [yr]: {...DEFAULT_BUDGETS, ...(mb[yr]||{})}});
-      setCatNames({...(d.catNames||{}), ...(localD.catNames||{})});
-      setCustomDocTmpls({...(d.customDocTmpls||{}), ...(localD.customDocTmpls||{})});
+      try {
+        const dbD = await dbLoadData(presetName);
+        const d = dbD || localD;
+        const localRows = localD.rows || [];
+        const dbRows = d.rows || [];
+        const keys = new Set(dbRows.map(r=>`${r.date}|${r.amount}|${r.place}`));
+        const merged = [...dbRows, ...localRows.filter(r=>!keys.has(`${r.date}|${r.amount}|${r.place}`))];
+        setRows(merged);
+        const mb = migrateBudgets(d.budgets||{});
+        const yr = String(new Date().getFullYear());
+        setBudgets({...mb, [yr]: {...DEFAULT_BUDGETS, ...(mb[yr]||{})}});
+        setCatNames({...(d.catNames||{}), ...(localD.catNames||{})});
+        setCustomDocTmpls({...(d.customDocTmpls||{}), ...(localD.customDocTmpls||{})});
+        // 병합 결과를 양쪽에 저장
+        const savePayload = {rows:merged, budgets:{...mb, [yr]: {...DEFAULT_BUDGETS, ...(mb[yr]||{})}}, catNames:{...(d.catNames||{}), ...(localD.catNames||{})}, customDocTmpls:{...(d.customDocTmpls||{}), ...(localD.customDocTmpls||{})}};
+        saveData(presetName, savePayload);
+        dbSaveData(presetName, savePayload);
+      } catch(e) {
+        console.error("DB 로드 실패, localStorage 사용:", e);
+        // DB 실패 시 localStorage만으로 진행
+        setRows(localD.rows||[]);
+        const mb = migrateBudgets(localD.budgets||{});
+        const yr = String(new Date().getFullYear());
+        setBudgets({...mb, [yr]: {...DEFAULT_BUDGETS, ...(mb[yr]||{})}});
+        setCatNames(localD.catNames||{});
+        setCustomDocTmpls(localD.customDocTmpls||{});
+      }
       setLoading(false);
-      // 병합 결과를 양쪽에 저장
-      const savePayload = {rows:merged, budgets:{...mb, [yr]: {...DEFAULT_BUDGETS, ...(mb[yr]||{})}}, catNames:{...(d.catNames||{}), ...(localD.catNames||{})}, customDocTmpls:{...(d.customDocTmpls||{}), ...(localD.customDocTmpls||{})}};
-      saveData(presetName, savePayload);
-      dbSaveData(presetName, savePayload);
     })();
   }, []);
 
