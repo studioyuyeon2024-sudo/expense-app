@@ -33,40 +33,44 @@
 <body>
 <div id="root"></div>
 <script type="text/babel">
-const {useState, useCallback, useRef, useEffect} = React;
+const {useState, useCallback, useRef, useEffect, useMemo} = React;
 
-const CATEGORIES = {
-  "일반지출": [
-    {id:"g1",name:"의회운영업무추진비",budget:19548000,fields:["월","일자","금액","장소","인원","사용내역"],dateField:"일자",amountField:"금액",placeField:"장소"},
-    {id:"g2",name:"의정운영공통경비",budget:32800000,fields:["일자","금액","장소","인원","사용내역"],dateField:"일자",amountField:"금액",placeField:"장소"},
-    {id:"g3",name:"의정운영공통경비(기념품)",budget:1500000,fields:["일자","금액","사용내역"],dateField:"일자",amountField:"금액",placeField:null},
-    {id:"g4",name:"의원 국내여비①",budget:1000000,fields:["일자","금액","사용내역"],dateField:"일자",amountField:"금액",placeField:null},
-    {id:"g5",name:"의원 국내여비②",budget:10400000,fields:["일자","금액","사용내역"],dateField:"일자",amountField:"금액",placeField:null},
-    {id:"g6",name:"의원국내여비③",budget:0,fields:["일자","금액","사용내역"],dateField:"일자",amountField:"금액",placeField:null},
-    {id:"g7",name:"의원국내여비④",budget:0,fields:["일자","금액","사용내역"],dateField:"일자",amountField:"금액",placeField:null},
-    {id:"g8",name:"행사실비지원금",budget:6400000,fields:["일자","금액","사용내역"],dateField:"일자",amountField:"금액",placeField:null},
-    {id:"g9",name:"직원 국외여비",budget:16000000,fields:["일자","금액","사용내역"],dateField:"일자",amountField:"금액",placeField:null},
-    {id:"g10",name:"의원 국외여비",budget:36000000,fields:["일자","금액","사용내역"],dateField:"일자",amountField:"금액",placeField:null},
-  ],
-  "일상경비": [
-    {id:"d1",name:"시책추진업무추진비",budget:6000000,fields:["구분(이호조)","금액","사용일자","장소","사용내역"],dateField:"사용일자",amountField:"금액",placeField:"장소"},
-    {id:"d2",name:"시책추진업무추진비(정책연구)",budget:0,fields:["구분(이호조)","금액","사용일자","장소","사용내역"],dateField:"사용일자",amountField:"금액",placeField:"장소"},
-    {id:"d3",name:"사무관리비(부서)",budget:20320000,fields:["구분(이호조)","금액","채주(일자)","사용내역"],dateField:"채주(일자)",amountField:"금액",placeField:null},
-    {id:"d4",name:"사무관리비(의원)상임①",budget:11748000,fields:["구분(이호조)","금액","채주(일자)","사용내역"],dateField:"채주(일자)",amountField:"금액",placeField:null},
-    {id:"d5",name:"사무관리비(의원)상임②",budget:840000,fields:["구분(이호조)","금액","채주(일자)","사용내역"],dateField:"채주(일자)",amountField:"금액",placeField:null},
-    {id:"d6",name:"국내여비(보좌직원)",budget:9880000,fields:["구분(이호조)","금액","채주(일자)","사용내역"],dateField:"채주(일자)",amountField:"금액",placeField:null},
-    {id:"d7",name:"부서운영업무추진비",budget:2400000,fields:["구분(이호조)","금액","사용일자","장소","사용내역"],dateField:"사용일자",amountField:"금액",placeField:"장소"},
-    {id:"d8",name:"정책연구개발 사무관리비",budget:8900000,fields:["구분(이호조)","금액","채주(일자)","사용내역"],dateField:"채주(일자)",amountField:"금액",placeField:null},
-    {id:"d9",name:"국내여비(정책연구팀)①",budget:0,fields:["구분(이호조)","금액","채주(일자)","사용내역"],dateField:"채주(일자)",amountField:"금액",placeField:null},
-    {id:"d10",name:"국내여비(정책연구팀)②",budget:0,fields:["구분(이호조)","금액","채주(일자)","사용내역"],dateField:"채주(일자)",amountField:"금액",placeField:null},
-    {id:"d11",name:"의원정책개발비",budget:40000000,fields:["구분(이호조)","지출","채주(일자)","사용내역"],dateField:"채주(일자)",amountField:"지출",placeField:null},
-  ],
+// ─── Preset System ────────────────────────────────────
+const PRESETS = {
+  "교육위원회": {
+    categories: {
+      "일반지출": [
+        {id:"g1",name:"의회운영업무추진비",budget:19548000,fields:["월","일자","금액","장소","인원","사용내역"],dateField:"일자",amountField:"금액",placeField:"장소"},
+        {id:"g2",name:"의정운영공통경비",budget:32800000,fields:["일자","금액","장소","인원","사용내역"],dateField:"일자",amountField:"금액",placeField:"장소"},
+        {id:"g3",name:"의정운영공통경비(기념품)",budget:1500000,fields:["일자","금액","사용내역"],dateField:"일자",amountField:"금액",placeField:null},
+        {id:"g4",name:"의원 국내여비①",budget:1000000,fields:["일자","금액","사용내역"],dateField:"일자",amountField:"금액",placeField:null},
+        {id:"g5",name:"의원 국내여비②",budget:10400000,fields:["일자","금액","사용내역"],dateField:"일자",amountField:"금액",placeField:null},
+        {id:"g6",name:"의원국내여비③",budget:0,fields:["일자","금액","사용내역"],dateField:"일자",amountField:"금액",placeField:null},
+        {id:"g7",name:"의원국내여비④",budget:0,fields:["일자","금액","사용내역"],dateField:"일자",amountField:"금액",placeField:null},
+        {id:"g8",name:"행사실비지원금",budget:6400000,fields:["일자","금액","사용내역"],dateField:"일자",amountField:"금액",placeField:null},
+        {id:"g9",name:"직원 국외여비",budget:16000000,fields:["일자","금액","사용내역"],dateField:"일자",amountField:"금액",placeField:null},
+        {id:"g10",name:"의원 국외여비",budget:36000000,fields:["일자","금액","사용내역"],dateField:"일자",amountField:"금액",placeField:null},
+      ],
+      "일상경비": [
+        {id:"d1",name:"시책추진업무추진비",budget:6000000,fields:["구분(이호조)","금액","사용일자","장소","사용내역"],dateField:"사용일자",amountField:"금액",placeField:"장소"},
+        {id:"d2",name:"시책추진업무추진비(정책연구)",budget:0,fields:["구분(이호조)","금액","사용일자","장소","사용내역"],dateField:"사용일자",amountField:"금액",placeField:"장소"},
+        {id:"d3",name:"사무관리비(부서)",budget:20320000,fields:["구분(이호조)","금액","채주(일자)","사용내역"],dateField:"채주(일자)",amountField:"금액",placeField:null},
+        {id:"d4",name:"사무관리비(의원)상임①",budget:11748000,fields:["구분(이호조)","금액","채주(일자)","사용내역"],dateField:"채주(일자)",amountField:"금액",placeField:null},
+        {id:"d5",name:"사무관리비(의원)상임②",budget:840000,fields:["구분(이호조)","금액","채주(일자)","사용내역"],dateField:"채주(일자)",amountField:"금액",placeField:null},
+        {id:"d6",name:"국내여비(보좌직원)",budget:9880000,fields:["구분(이호조)","금액","채주(일자)","사용내역"],dateField:"채주(일자)",amountField:"금액",placeField:null},
+        {id:"d7",name:"부서운영업무추진비",budget:2400000,fields:["구분(이호조)","금액","사용일자","장소","사용내역"],dateField:"사용일자",amountField:"금액",placeField:"장소"},
+        {id:"d8",name:"정책연구개발 사무관리비",budget:8900000,fields:["구분(이호조)","금액","채주(일자)","사용내역"],dateField:"채주(일자)",amountField:"금액",placeField:null},
+        {id:"d9",name:"국내여비(정책연구팀)①",budget:0,fields:["구분(이호조)","금액","채주(일자)","사용내역"],dateField:"채주(일자)",amountField:"금액",placeField:null},
+        {id:"d10",name:"국내여비(정책연구팀)②",budget:0,fields:["구분(이호조)","금액","채주(일자)","사용내역"],dateField:"채주(일자)",amountField:"금액",placeField:null},
+        {id:"d11",name:"의원정책개발비",budget:40000000,fields:["구분(이호조)","지출","채주(일자)","사용내역"],dateField:"채주(일자)",amountField:"지출",placeField:null},
+      ],
+    },
+    docTemplates: null, // set below
+  },
+  // 새 과 추가 시 여기에 프리셋 추가
 };
 
-const ALL_CATS = [
-  ...CATEGORIES["일반지출"].map(c=>({...c,tab:"일반지출"})),
-  ...CATEGORIES["일상경비"].map(c=>({...c,tab:"일상경비"})),
-];
+const PRESET_NAMES = Object.keys(PRESETS);
 
 const fmt = (n) => n ? Number(n).toLocaleString("ko-KR") : "0";
 const parseAmt = (s) => parseInt(String(s||"").replace(/[^0-9-]/g,""),10) || 0;
@@ -112,8 +116,8 @@ function fmtDocDate(dateStr){
   }catch{return dateStr;}
 }
 
-// Template definitions per category
-const DOC_TEMPLATES = {
+// Template definitions per category (교육위원회)
+const DOC_TEMPLATES_교육 = {
   g1: { // 의회운영업무추진비
     titles: [
       {id:"g1t1",label:"효율적인 의정활동을 위한 간담",
@@ -176,23 +180,52 @@ const DOC_TEMPLATES = {
     예산과목:"의회사무처, 행정운영경비(의회사무처), 기본경비, 부서 기본경비, 업무추진비, 부서운영업무추진비",
   },
 };
+PRESETS["교육위원회"].docTemplates = DOC_TEMPLATES_교육;
 
-// Default budgets from category definitions
-const DEFAULT_BUDGETS = {};
-[...CATEGORIES["일반지출"],...CATEGORIES["일상경비"]].forEach(c=>{DEFAULT_BUDGETS[c.id]=c.budget||0;});
+// Preset helper functions
+const PRESET_KEY = "expense-app-preset";
+function getStorageKey(presetName) { return `expense-app-v2-${presetName}`; }
+function getSavedPreset() {
+  try { return localStorage.getItem(PRESET_KEY) || ""; } catch { return ""; }
+}
+function savePresetChoice(name) {
+  try { localStorage.setItem(PRESET_KEY, name); } catch {}
+}
+function getDefaultBudgets(categories) {
+  const b = {};
+  [...(categories["일반지출"]||[]),...(categories["일상경비"]||[])].forEach(c=>{b[c.id]=c.budget||0;});
+  return b;
+}
 
-function loadData() {
-  try { const d = localStorage.getItem(KEY); return d ? JSON.parse(d) : {rows:[],budgets:{}}; }
+// Data migration: move old "expense-app-v2" data to preset-specific key
+function migrateOldData() {
+  try {
+    const old = localStorage.getItem("expense-app-v2");
+    if (!old) return;
+    const savedPreset = getSavedPreset();
+    if (!savedPreset) {
+      // Auto-migrate to 교육위원회 (original preset)
+      localStorage.setItem(getStorageKey("교육위원회"), old);
+      savePresetChoice("교육위원회");
+    }
+    localStorage.removeItem("expense-app-v2");
+  } catch {}
+}
+migrateOldData();
+
+function loadData(presetName) {
+  try { const d = localStorage.getItem(getStorageKey(presetName)); return d ? JSON.parse(d) : {rows:[],budgets:{}}; }
   catch { return {rows:[],budgets:{}}; }
 }
-function saveData(d) {
-  try { localStorage.setItem(KEY, JSON.stringify(d)); return true; }
+function saveData(presetName, d) {
+  try { localStorage.setItem(getStorageKey(presetName), JSON.stringify(d)); return true; }
   catch { return false; }
 }
 
 function App() {
+  const [presetName, setPresetName] = useState(() => getSavedPreset());
   const [rows, setRows] = useState([]);
-  const [budgets, setBudgets] = useState({...DEFAULT_BUDGETS});
+  const [budgets, setBudgets] = useState({});
   const [view, setView] = useState("home");
   const [loading, setLoading] = useState(true);
   const [toast, setToast] = useState(null);
@@ -207,9 +240,34 @@ function App() {
   const [previewCat, setPreviewCat] = useState("all");
   const [editBudget, setEditBudget] = useState(null);
   const [editCell, setEditCell] = useState(null);
-  const [docModal, setDocModal] = useState(null); // {row, catId, step:"select"|"preview", titleId, nValue, docText}
+  const [docModal, setDocModal] = useState(null); // {rows, catId, step, titleId, nValue, docText, mode}
   const [copied, setCopied] = useState(false);
+  const [docSelected, setDocSelected] = useState(new Set()); // for multi-expense doc generation
+  const [searchText, setSearchText] = useState("");
   const fRef = useRef(null);
+
+  // Derive preset data
+  const currentPreset = PRESETS[presetName] || null;
+  const CATEGORIES = useMemo(() => currentPreset ? currentPreset.categories : {"일반지출":[],"일상경비":[]}, [currentPreset]);
+  const DOC_TEMPLATES = useMemo(() => currentPreset ? (currentPreset.docTemplates || {}) : {}, [currentPreset]);
+  const ALL_CATS = useMemo(() => [
+    ...(CATEGORIES["일반지출"]||[]).map(c=>({...c,tab:"일반지출"})),
+    ...(CATEGORIES["일상경비"]||[]).map(c=>({...c,tab:"일상경비"})),
+  ], [CATEGORIES]);
+  const DEFAULT_BUDGETS = useMemo(() => getDefaultBudgets(CATEGORIES), [CATEGORIES]);
+
+  // Preset selection handler
+  const selectPreset = (name) => {
+    savePresetChoice(name);
+    setPresetName(name);
+    const preset = PRESETS[name];
+    const defB = getDefaultBudgets(preset.categories);
+    const d = loadData(name);
+    setRows(d.rows||[]);
+    setBudgets({...defB,...(d.budgets||{})});
+    setView("home");
+    setLoading(false);
+  };
 
   const updateBudget = (catId, val) => {
     const newB = {...budgets, [catId]: parseAmt(val)};
@@ -257,15 +315,67 @@ function App() {
     return { title, body: lines.join("\n") };
   };
 
+  // Generate combined document for 2 expenses (placeholder - will be refined with user's example)
+  const generateCombinedDoc = (docRows, tmpl, titleObj, nVal) => {
+    const row1 = docRows[0], row2 = docRows[1];
+    const totalAmt = row1.amount + row2.amount;
+    const amtKr = numToKorean(totalAmt);
+    const dateShort1 = (() => { try { const [y,m,d]=row1.date.split(" ")[0].split("-"); return `${parseInt(m)}.${parseInt(d)}.`; } catch { return ""; } })();
+
+    let title = titleObj.label;
+    if (titleObj.hasN && nVal) title = title.replace("N", nVal);
+    title = `(교육)${title}`;
+    if (!titleObj.noAttendee && !titleObj.isStaff && dateShort1) title += `(${dateShort1})`;
+
+    let intro = titleObj.intro;
+    if (titleObj.hasN && nVal) intro = intro.replace("N", nVal);
+    const meal1 = getMealType(row1.date);
+    if (intro.includes("{meal}")) intro = intro.replace("{meal}", meal1);
+
+    const loc1 = row1.place + (row1.extra?.["장소상세"] ? ` ${row1.extra["장소상세"]}` : "");
+    const loc2 = row2.place + (row2.extra?.["장소상세"] ? ` ${row2.extra["장소상세"]}` : "");
+    const people = row1.extra?.["인원"] || row1.extra?.["참석자"] || "N";
+
+    let lines = [];
+    lines.push(`제목  ${title}`);
+    lines.push("");
+    lines.push(`  ${intro}`);
+    lines.push("");
+    lines.push(`  1. ${titleObj.amtLabel} : 금${fmt(totalAmt)}원(금${amtKr}원)`);
+    lines.push(`  2. 일     시`);
+    lines.push(`    가. ${fmtDocDate(row1.date)}`);
+    lines.push(`    나. ${fmtDocDate(row2.date)}`);
+    lines.push(`  3. 장     소`);
+    lines.push(`    가. ${loc1}`);
+    lines.push(`    나. ${loc2}`);
+    if (titleObj.참석label && titleObj.참석desc) {
+      lines.push(`  4. ${titleObj.참석label} : ${people}명(${titleObj.참석desc})`);
+      lines.push(`  5. 지출방법 : ${tmpl.지출방법}`);
+      lines.push(`  6. ${tmpl.예산label} : ${tmpl.예산과목}.  끝.`);
+    } else {
+      lines.push(`  4. 지출방법 : ${tmpl.지출방법}`);
+      lines.push(`  5. ${tmpl.예산label} : ${tmpl.예산과목}.  끝.`);
+    }
+
+    return { title, body: lines.join("\n") };
+  };
+
   const openDocModal = (row) => {
     const tmpl = DOC_TEMPLATES[row.catId];
     if (!tmpl) return;
     if (tmpl.titles.length === 1) {
       const doc = generateDoc(row, tmpl, tmpl.titles[0], "");
-      setDocModal({ row, catId: row.catId, step: "preview", titleId: tmpl.titles[0].id, nValue: "", docText: doc.body, docTitle: doc.title });
+      setDocModal({ row, rows:[row], catId: row.catId, step: "preview", titleId: tmpl.titles[0].id, nValue: "", docText: doc.body, docTitle: doc.title, mode:"single" });
     } else {
-      setDocModal({ row, catId: row.catId, step: "select", titleId: "", nValue: "" });
+      setDocModal({ row, rows:[row], catId: row.catId, step: "select", titleId: "", nValue: "", mode:"single" });
     }
+  };
+
+  const openDocModalMulti = (selRows, catId) => {
+    const tmpl = DOC_TEMPLATES[catId];
+    if (!tmpl || selRows.length !== 2) return;
+    // For multi-expense, go to title selection
+    setDocModal({ row: selRows[0], rows: selRows, catId, step: "select", titleId: "", nValue: "", mode:"combined" });
   };
 
   const selectDocTitle = (titleId) => {
@@ -275,7 +385,9 @@ function App() {
     if (titleObj?.hasN && !docModal.nValue) {
       setDocModal({ ...docModal, titleId, step: "inputN" });
     } else {
-      const doc = generateDoc(docModal.row, tmpl, titleObj, docModal.nValue);
+      const doc = docModal.mode==="combined" && docModal.rows?.length===2
+        ? generateCombinedDoc(docModal.rows, tmpl, titleObj, docModal.nValue)
+        : generateDoc(docModal.row, tmpl, titleObj, docModal.nValue);
       setDocModal({ ...docModal, titleId, step: "preview", docText: doc.body, docTitle: doc.title });
     }
   };
@@ -284,7 +396,9 @@ function App() {
     if (!docModal) return;
     const tmpl = DOC_TEMPLATES[docModal.catId];
     const titleObj = tmpl.titles.find(t => t.id === docModal.titleId);
-    const doc = generateDoc(docModal.row, tmpl, titleObj, docModal.nValue);
+    const doc = docModal.mode==="combined" && docModal.rows?.length===2
+      ? generateCombinedDoc(docModal.rows, tmpl, titleObj, docModal.nValue)
+      : generateDoc(docModal.row, tmpl, titleObj, docModal.nValue);
     setDocModal({ ...docModal, step: "preview", docText: doc.body, docTitle: doc.title });
   };
 
@@ -295,11 +409,11 @@ function App() {
 
   const jsonRef = useRef(null);
   const saveToFile = () => {
-    const data = JSON.stringify({rows, budgets, exportedAt: new Date().toISOString()}, null, 2);
+    const data = JSON.stringify({rows, budgets, preset: presetName, exportedAt: new Date().toISOString()}, null, 2);
     const blob = new Blob([data], {type:"application/json"});
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a"); a.href=url;
-    a.download = `지출관리_백업_${new Date().toISOString().slice(0,10)}.json`;
+    a.download = `지출관리_백업_${presetName}_${new Date().toISOString().slice(0,10)}.json`;
     a.click(); URL.revokeObjectURL(url);
     notify("파일 저장 완료!");
   };
@@ -310,6 +424,10 @@ function App() {
       try {
         const data = JSON.parse(e.target.result);
         if(data.rows) {
+          // Warn if backup is from a different preset
+          if(data.preset && data.preset !== presetName) {
+            if(!confirm(`이 백업은 "${data.preset}" 프리셋의 데이터입니다.\n현재 프리셋은 "${presetName}"입니다.\n계속 불러오시겠습니까?`)) return;
+          }
           const merged=[...rows]; const keys=new Set(rows.map(r=>`${r.date}|${r.amount}|${r.place}`));
           let added=0;
           data.rows.forEach(r=>{if(!keys.has(`${r.date}|${r.amount}|${r.place}`)){merged.push(r);added++;}});
@@ -323,15 +441,22 @@ function App() {
 
   const notify = (msg, type="ok") => { setToast({msg,type}); setTimeout(()=>setToast(null),2800); };
 
-  useEffect(() => { const d = loadData(); setRows(d.rows||[]); setBudgets({...DEFAULT_BUDGETS,...(d.budgets||{})}); setLoading(false); }, []);
+  useEffect(() => {
+    if (!presetName) { setLoading(false); return; }
+    const d = loadData(presetName);
+    setRows(d.rows||[]);
+    setBudgets({...DEFAULT_BUDGETS,...(d.budgets||{})});
+    setLoading(false);
+  }, []);
 
   const persist = useCallback((r, b) => {
+    if (!presetName) return;
     const newRows = r !== undefined ? r : rows;
     const newBudgets = b !== undefined ? b : budgets;
     if(r !== undefined) setRows(newRows);
     if(b !== undefined) setBudgets(newBudgets);
-    saveData({rows:newRows, budgets:newBudgets});
-  }, [rows, budgets]);
+    saveData(presetName, {rows:newRows, budgets:newBudgets});
+  }, [rows, budgets, presetName]);
 
   const processData = useCallback((data) => {
     const p = data.filter(r=>r["승인일시"]&&r["금액"]&&r["가맹점명"]).map(r=>({
@@ -383,13 +508,14 @@ function App() {
     else persist(rows.map(r=>selected.has(r.id)?{...r,tab:c.tab,catId:c.id}:r));
     setSelected(new Set()); notify(`${selected.size}건 일괄 분류`);
   };
-  const resetAll = () => { if(!confirm("모든 데이터를 삭제하시겠습니까?")) return; setBudgets({...DEFAULT_BUDGETS}); persist([], {...DEFAULT_BUDGETS}); setView("home"); notify("초기화 완료"); };
+  const resetAll = () => { if(!confirm("모든 데이터를 삭제하시겠습니까?")) return; const defB={...DEFAULT_BUDGETS}; setBudgets(defB); persist([], defB); setView("home"); notify("초기화 완료"); };
 
   const getFiltered = (src) => {
     let l = src;
     if(filterTab==="미분류") l=l.filter(r=>!r.catId);
     else if(filterTab!=="all") l=l.filter(r=>r.tab===filterTab);
     if(filterMonth!=="all") l=l.filter(r=>r.date?.split("-")?.[1]===filterMonth);
+    if(searchText) { const q=searchText.toLowerCase(); l=l.filter(r=>r.place?.toLowerCase().includes(q)||r.date?.includes(q)); }
     return l;
   };
 
@@ -424,6 +550,29 @@ function App() {
 
   if(loading) return React.createElement("div",{style:{display:"flex",alignItems:"center",justifyContent:"center",height:"100vh"}},
     React.createElement("p",{style:{color:"#94a3b8",fontSize:15}},"불러오는 중..."));
+
+  // Preset selection screen
+  if(!presetName) return (
+    <div style={{display:"flex",alignItems:"center",justifyContent:"center",minHeight:"100vh",background:"#f0f2f7",padding:20}}>
+      <div style={{background:"#fff",borderRadius:20,padding:"48px 40px",maxWidth:440,width:"100%",boxShadow:"0 8px 32px rgba(0,0,0,.08)",textAlign:"center"}}>
+        <div style={{width:56,height:56,borderRadius:14,background:"linear-gradient(135deg,#6366f1,#10b981)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:28,fontWeight:900,color:"#fff",margin:"0 auto 20px"}}>₩</div>
+        <h1 style={{fontSize:22,fontWeight:800,marginBottom:6,letterSpacing:"-0.5px"}}>지출관리</h1>
+        <p style={{fontSize:13,color:"#94a3b8",marginBottom:28}}>사용할 과(부서)를 선택하세요</p>
+        <div style={{display:"flex",flexDirection:"column",gap:10}}>
+          {PRESET_NAMES.map(name=>(
+            <button key={name} onClick={()=>selectPreset(name)}
+              style={{padding:"16px 20px",border:"2px solid #e2e8f0",borderRadius:12,background:"#fff",fontSize:15,fontWeight:600,
+                fontFamily:"inherit",color:"#1e293b",cursor:"pointer",transition:"all .15s"}}
+              onMouseEnter={e=>{e.currentTarget.style.borderColor="#6366f1";e.currentTarget.style.background="#f5f3ff";}}
+              onMouseLeave={e=>{e.currentTarget.style.borderColor="#e2e8f0";e.currentTarget.style.background="#fff";}}>
+              {name}
+            </button>
+          ))}
+        </div>
+        <p style={{fontSize:11,color:"#cbd5e1",marginTop:24}}>선택 후 자동으로 기억됩니다</p>
+      </div>
+    </div>
+  );
 
   const CatSelect = ({value, onChange, small}) => (
     <select value={value} onChange={e=>onChange(e.target.value)} style={{...S.sel,...(small?{fontSize:11,padding:"4px 6px"}:{}),borderColor:value?(ALL_CATS.find(c=>c.id===value)?.tab==="일반지출"?"#93c5fd":"#6ee7b7"):"#fca5a5"}}>
@@ -520,19 +669,23 @@ function App() {
           </div>
         </div>
         <div style={{padding:"6px 8px",flex:1}}>
-          {[["home","📊","대시보드"],["upload","📤","업로드"],["history","📋","전체내역"],["preview","📑","미리보기"]].map(([id,ic,lb])=>(
-            <button key={id} onClick={()=>{setView(id);setSelected(new Set());setFilterTab("all");setFilterMonth("all");}}
+          {[["home","📊","대시보드"],["upload","📤","업로드"],["history","📋","전체내역"],["preview","📑","미리보기"],["budget","💰","예산관리"],["disclosure","📊","정보공개"]].map(([id,ic,lb])=>(
+            <button key={id} onClick={()=>{setView(id);setSelected(new Set());setDocSelected(new Set());setFilterTab("all");setFilterMonth("all");setSearchText("");}}
               style={{...S.nb,...((view===id||(view==="classify"&&id==="upload"))?S.nbA:{})}}>
               <span style={{fontSize:14}}>{ic}</span><span>{lb}</span>
             </button>
           ))}
         </div>
         <div style={{padding:"6px 8px",borderTop:"1px solid rgba(255,255,255,.06)",display:"flex",flexDirection:"column",gap:1}}>
+          <div style={{padding:"6px 12px",fontSize:10,color:"#64748b",fontWeight:600,textAlign:"center",background:"rgba(255,255,255,.04)",borderRadius:5,marginBottom:4}}>
+            {presetName}
+          </div>
           <button style={S.ns} onClick={exportXLSX} disabled={!rows.length}>📥 엑셀 내보내기</button>
           <button style={S.ns} onClick={saveToFile} disabled={!rows.length}>💾 파일 백업</button>
           <button style={S.ns} onClick={()=>jsonRef.current?.click()}>📂 백업 불러오기</button>
           <input ref={jsonRef} type="file" accept=".json" style={{display:"none"}} onChange={e=>{loadFromFile(e.target.files[0]);e.target.value="";}}/>
           <button style={{...S.ns,color:"#f87171"}} onClick={resetAll}>🗑️ 초기화</button>
+          <button style={{...S.ns,color:"#94a3b8"}} onClick={()=>{if(confirm("과(부서)를 변경하시겠습니까?\n현재 과의 데이터는 보존됩니다.")){savePresetChoice("");setPresetName("");setLoading(false);}}}>🔄 과 변경</button>
         </div>
       </nav>
 
@@ -657,6 +810,11 @@ function App() {
             <button style={S.pri} onClick={()=>setView("upload")}>📤 새 파일 추가</button>
           </div>
           {!rows.length ? <div style={S.empty}><p style={{color:"#94a3b8"}}>저장된 내역이 없습니다</p></div> : (<>
+            <div style={{display:"flex",gap:8,marginBottom:10,flexWrap:"wrap",alignItems:"center"}}>
+              <input value={searchText} onChange={e=>setSearchText(e.target.value)} placeholder="가맹점명 또는 날짜 검색..."
+                style={{padding:"6px 12px",border:"1.5px solid #e2e8f0",borderRadius:6,fontSize:12,fontFamily:"inherit",minWidth:180,flex:"0 0 auto"}}/>
+              {searchText && <button style={{...S.fbtn,color:"#ef4444",borderColor:"#fca5a5"}} onClick={()=>setSearchText("")}>검색 초기화</button>}
+            </div>
             {months.length>1&&<div style={{display:"flex",gap:5,marginBottom:10,flexWrap:"wrap"}}>
               <button style={{...S.fbtn,...(filterMonth==="all"?S.fbtnA:{})}} onClick={()=>setFilterMonth("all")}>전체</button>
               {months.map(m=><button key={m} style={{...S.fbtn,...(filterMonth===m?S.fbtnA:{})}} onClick={()=>setFilterMonth(m)}>{parseInt(m)}월</button>)}
@@ -754,6 +912,19 @@ function App() {
                           <span style={{fontSize:14,fontWeight:700,color:"#1e293b"}}>{cat.name}</span>
                           <span style={{fontSize:11,color:"#94a3b8",background:"#fff",padding:"2px 8px",borderRadius:10,fontWeight:600}}>{catRows.length}건</span>
                         </div>
+                        {DOC_TEMPLATES[cat.id] && (()=>{
+                          const selCount = catRows.filter(r=>docSelected.has(r.id)).length;
+                          return <button disabled={selCount<1||selCount>2}
+                            onClick={()=>{
+                              const selRows = catRows.filter(r=>docSelected.has(r.id));
+                              if(selRows.length===1) openDocModal(selRows[0]);
+                              else if(selRows.length===2) openDocModalMulti(selRows, cat.id);
+                            }}
+                            style={{padding:"5px 14px",background:selCount>=1&&selCount<=2?"#6366f1":"#e2e8f0",color:selCount>=1&&selCount<=2?"#fff":"#94a3b8",
+                              border:"none",borderRadius:6,fontSize:11.5,fontWeight:700,fontFamily:"inherit"}}>
+                            공문 생성{selCount>0?` (${selCount}건)`:""}
+                          </button>;
+                        })()}
                       </div>
                       {/* Budget bar */}
                       {(()=>{
@@ -795,6 +966,10 @@ function App() {
                       <table style={{width:"100%",borderCollapse:"collapse",fontSize:13}}>
                         <thead>
                           <tr>
+                            {DOC_TEMPLATES[cat.id] && <th style={{...S.pvTh,width:30,textAlign:"center"}}>
+                              <input type="checkbox" checked={catRows.length>0&&catRows.every(r=>docSelected.has(r.id))}
+                                onChange={()=>{const ns=new Set(docSelected);const allSel=catRows.every(r=>ns.has(r.id));catRows.forEach(r=>{allSel?ns.delete(r.id):ns.add(r.id);});setDocSelected(ns);}}/>
+                            </th>}
                             <th style={{...S.pvTh,width:40,textAlign:"center"}}>#</th>
                             {cat.fields.map((f,fi)=>(
                               <th key={fi} style={{...S.pvTh,...(f==="금액"||f==="지출"||f===cat.amountField?{textAlign:"right"}:{})}}>{f}</th>
@@ -804,8 +979,11 @@ function App() {
                         </thead>
                         <tbody>
                           {catRows.map((row,idx)=>(
-                            <tr key={row.id} style={{borderBottom:"1px solid #f0f1f3",background:idx%2===0?"#fff":"#fafafc",transition:"background .1s"}}
-                              onMouseEnter={e=>e.currentTarget.style.background="#f5f6ff"} onMouseLeave={e=>e.currentTarget.style.background=idx%2===0?"#fff":"#fafafc"}>
+                            <tr key={row.id} style={{borderBottom:"1px solid #f0f1f3",background:docSelected.has(row.id)?"#eef2ff":(idx%2===0?"#fff":"#fafafc"),transition:"background .1s"}}
+                              onMouseEnter={e=>{if(!docSelected.has(row.id))e.currentTarget.style.background="#f5f6ff";}} onMouseLeave={e=>{if(!docSelected.has(row.id))e.currentTarget.style.background=idx%2===0?"#fff":"#fafafc";}}>
+                              {DOC_TEMPLATES[cat.id] && <td style={{...S.pvTd,textAlign:"center"}}>
+                                <input type="checkbox" checked={docSelected.has(row.id)} onChange={()=>{const ns=new Set(docSelected);ns.has(row.id)?ns.delete(row.id):ns.add(row.id);setDocSelected(ns);}}/>
+                              </td>}
                               <td style={{...S.pvTd,textAlign:"center",color:"#b0b8c4",fontSize:11,fontWeight:700}}>{idx+1}</td>
                               {cat.fields.map((f,fi)=>{
                                 const val = cellVal(row,f,cat);
@@ -851,6 +1029,7 @@ function App() {
                         </tbody>
                         <tfoot>
                           <tr style={{background:lightBg}}>
+                            {DOC_TEMPLATES[cat.id] && <td style={S.pvTd}/>}
                             <td style={{...S.pvTd,textAlign:"center",fontWeight:700,color:accent}}>합계</td>
                             {cat.fields.map((f,fi)=>{
                               const isAmt = f==="금액"||f==="지출"||f===cat.amountField;
@@ -876,6 +1055,150 @@ function App() {
           </div>;
         })()}
 
+        {/* BUDGET MANAGEMENT */}
+        {view==="budget"&&<div style={{animation:"fadeUp .35s ease"}}>
+          <h1 style={S.pt}>예산관리</h1><p style={S.pd}>카테고리별 예산액을 수정하고 집행 현황을 확인하세요</p>
+          {["일반지출","일상경비"].map(tabName=>{
+            const cats = CATEGORIES[tabName]||[];
+            const isG = tabName==="일반지출";
+            const accent = isG ? "#3b82f6" : "#10b981";
+            const tabTotal = cats.reduce((s,c)=>s+(budgets[c.id]||0),0);
+            const tabSpent = cats.reduce((s,c)=>s+rows.filter(r=>r.catId===c.id).reduce((ss,r)=>ss+r.amount,0),0);
+            return <div key={tabName} style={{marginBottom:24}}>
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
+                <h2 style={{fontSize:15,fontWeight:700,color:accent}}>{tabName}</h2>
+                <div style={{fontSize:12,color:"#64748b"}}>
+                  예산합계 <strong style={{color:"#1e293b"}}>{fmt(tabTotal)}원</strong> · 집행합계 <strong style={{color:accent}}>{fmt(tabSpent)}원</strong>
+                </div>
+              </div>
+              <div style={{borderRadius:10,border:"1px solid #e2e8f0",overflow:"hidden",background:"#fff"}}>
+                <table style={{width:"100%",borderCollapse:"collapse",fontSize:13}}>
+                  <thead><tr style={{background:"#f8f9fb"}}>
+                    <th style={S.pvTh}>카테고리</th>
+                    <th style={{...S.pvTh,textAlign:"right",minWidth:130}}>예산액</th>
+                    <th style={{...S.pvTh,textAlign:"right",minWidth:110}}>집행액</th>
+                    <th style={{...S.pvTh,textAlign:"right",minWidth:110}}>잔액</th>
+                    <th style={{...S.pvTh,textAlign:"right",minWidth:70}}>집행률</th>
+                    <th style={{...S.pvTh,width:40}}>건수</th>
+                  </tr></thead>
+                  <tbody>
+                    {cats.map((c,idx)=>{
+                      const bg=budgets[c.id]||0;
+                      const spent=rows.filter(r=>r.catId===c.id).reduce((s,r)=>s+r.amount,0);
+                      const remain=bg-spent;
+                      const pct=bg>0?Math.min((spent/bg)*100,100):0;
+                      const over=spent>bg&&bg>0;
+                      const cnt=rows.filter(r=>r.catId===c.id).length;
+                      return <tr key={c.id} style={{borderBottom:"1px solid #f0f1f3",background:idx%2===0?"#fff":"#fafafc"}}>
+                        <td style={{...S.pvTd,fontWeight:600}}>{c.name}</td>
+                        <td style={{...S.pvTd,textAlign:"right"}}>
+                          {editBudget===c.id ? (
+                            <input autoFocus defaultValue={bg} style={{width:130,padding:"4px 8px",border:"2px solid "+accent,borderRadius:5,fontSize:13,fontWeight:700,fontFamily:"inherit",textAlign:"right"}}
+                              onBlur={e=>{updateBudget(c.id,e.target.value);setEditBudget(null);}}
+                              onKeyDown={e=>{if(e.key==="Enter"){updateBudget(c.id,e.target.value);setEditBudget(null);}if(e.key==="Escape")setEditBudget(null);}}/>
+                          ) : (
+                            <span onClick={()=>setEditBudget(c.id)} style={{fontWeight:700,cursor:"pointer",borderBottom:"1px dashed #94a3b8",fontFamily:"var(--mono)"}} title="클릭하여 수정">
+                              {fmt(bg)}원
+                            </span>
+                          )}
+                        </td>
+                        <td style={{...S.pvTd,textAlign:"right",fontWeight:700,fontFamily:"var(--mono)",color:accent}}>{fmt(spent)}원</td>
+                        <td style={{...S.pvTd,textAlign:"right",fontWeight:700,fontFamily:"var(--mono)",color:over?"#ef4444":"#1e293b"}}>{fmt(remain)}원</td>
+                        <td style={{...S.pvTd,textAlign:"right"}}>
+                          <span style={{fontSize:11,fontWeight:600,color:over?"#ef4444":pct>80?"#d97706":"#64748b",background:over?"#fef2f2":pct>80?"#fffbeb":"#f8f9fb",padding:"2px 8px",borderRadius:10}}>
+                            {bg>0?pct.toFixed(1)+"%":"—"}
+                          </span>
+                        </td>
+                        <td style={{...S.pvTd,textAlign:"center",fontSize:11,color:"#94a3b8"}}>{cnt}</td>
+                      </tr>;
+                    })}
+                  </tbody>
+                  <tfoot><tr style={{background:isG?"#eff6ff":"#ecfdf5"}}>
+                    <td style={{...S.pvTd,fontWeight:800}}>합계</td>
+                    <td style={{...S.pvTd,textAlign:"right",fontWeight:800,fontFamily:"var(--mono)"}}>{fmt(tabTotal)}원</td>
+                    <td style={{...S.pvTd,textAlign:"right",fontWeight:800,fontFamily:"var(--mono)",color:accent}}>{fmt(tabSpent)}원</td>
+                    <td style={{...S.pvTd,textAlign:"right",fontWeight:800,fontFamily:"var(--mono)"}}>{fmt(tabTotal-tabSpent)}원</td>
+                    <td style={{...S.pvTd,textAlign:"right",fontWeight:700,fontSize:11,color:"#64748b"}}>{tabTotal>0?(tabSpent/tabTotal*100).toFixed(1)+"%":"—"}</td>
+                    <td style={S.pvTd}/>
+                  </tr></tfoot>
+                </table>
+              </div>
+            </div>;
+          })}
+          <div style={{display:"flex",gap:10,justifyContent:"flex-end"}}>
+            <button style={S.sec2} onClick={()=>{if(confirm("예산을 프리셋 기본값으로 초기화하시겠습니까?")){persist(undefined,{...DEFAULT_BUDGETS});}}} >예산 초기화</button>
+          </div>
+        </div>}
+
+        {/* INFORMATION DISCLOSURE */}
+        {view==="disclosure"&&(()=>{
+          const now = new Date();
+          const curYear = now.getFullYear();
+          const curQ = Math.ceil((now.getMonth()+1)/3);
+          const [dYear, setDYear] = [curYear, null]; // static for now
+          const [dQuarter, setDQuarter] = [curQ, null]; // static for now
+          const qRange = [[1,3],[4,6],[7,9],[10,12]][dQuarter-1] || [1,3];
+          const qRows = rows.filter(r=>{
+            try { const [y,m] = r.date.split("-"); return parseInt(y)===dYear && parseInt(m)>=qRange[0] && parseInt(m)<=qRange[1]; } catch { return false; }
+          });
+          const qByTab = {
+            "일반지출": qRows.filter(r=>r.tab==="일반지출"),
+            "일상경비": qRows.filter(r=>r.tab==="일상경비"),
+          };
+
+          return <div style={{animation:"fadeUp .35s ease"}}>
+            <h1 style={S.pt}>정보공개</h1>
+            <p style={S.pd}>분기별 지출 내역을 확인하고 내보내세요</p>
+
+            <div style={{display:"flex",gap:12,marginBottom:18,alignItems:"center",flexWrap:"wrap"}}>
+              <div style={{fontSize:14,fontWeight:700}}>{dYear}년</div>
+              <div style={{display:"flex",gap:0,borderRadius:10,overflow:"hidden",border:"1px solid #e2e8f0"}}>
+                {[1,2,3,4].map(q=>(
+                  <button key={q} style={{padding:"9px 20px",border:"none",fontSize:13,fontWeight:dQuarter===q?700:500,fontFamily:"inherit",
+                    background:dQuarter===q?"#6366f1":"#fff",color:dQuarter===q?"#fff":"#64748b"}}
+                    disabled>{q}분기 ({[[1,3],[4,6],[7,9],[10,12]][q-1].join("-")}월)</button>
+                ))}
+              </div>
+            </div>
+
+            <div style={S.sec}>
+              <h2 style={S.st}>{dQuarter}분기 요약 ({qRange[0]}~{qRange[1]}월)</h2>
+              <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:10,marginBottom:16}}>
+                {[
+                  {lb:"총 건수",v:`${qRows.length}건`,bg:"#f0f2f7"},
+                  {lb:"총 지출액",v:`${fmt(qRows.reduce((s,r)=>s+r.amount,0))}원`,bg:"#eff6ff"},
+                  {lb:"카테고리",v:`${new Set(qRows.map(r=>r.catId)).size}개`,bg:"#ecfdf5"},
+                ].map((c,i)=>(
+                  <div key={i} style={{padding:"14px 16px",borderRadius:10,background:c.bg}}>
+                    <div style={{fontSize:10.5,color:"#64748b",fontWeight:600,marginBottom:4}}>{c.lb}</div>
+                    <div style={{fontSize:16,fontWeight:800}}>{c.v}</div>
+                  </div>
+                ))}
+              </div>
+
+              {ALL_CATS.filter(c=>qRows.some(r=>r.catId===c.id)).map(cat=>{
+                const cr=qRows.filter(r=>r.catId===cat.id);
+                const total=cr.reduce((s,r)=>s+r.amount,0);
+                const ac=cat.tab==="일반지출"?"#3b82f6":"#10b981";
+                return <div key={cat.id} style={{padding:"8px 0",borderBottom:"1px solid #f5f6fa"}}>
+                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                    <div style={{display:"flex",alignItems:"center",gap:8}}>
+                      <span style={{width:7,height:7,borderRadius:"50%",background:ac,flexShrink:0}}/>
+                      <span style={{fontSize:13,fontWeight:500}}>{cat.name}</span>
+                      <span style={{fontSize:10.5,color:"#94a3b8",background:"#f1f5f9",padding:"1px 6px",borderRadius:4}}>{cr.length}건</span>
+                    </div>
+                    <span style={{fontFamily:"var(--mono)",fontSize:13,fontWeight:700,color:"#1e293b"}}>{fmt(total)}원</span>
+                  </div>
+                </div>;
+              })}
+              {!qRows.length && <p style={{textAlign:"center",color:"#cbd5e1",padding:20}}>해당 분기 데이터가 없습니다</p>}
+            </div>
+            <div style={{display:"flex",justifyContent:"flex-end",gap:10,marginTop:14}}>
+              <p style={{flex:1,fontSize:11,color:"#94a3b8",alignSelf:"center"}}>정보공개용 서식은 추후 업데이트 예정입니다</p>
+            </div>
+          </div>;
+        })()}
+
       </main>
 
       {/* Document Generation Modal */}
@@ -885,7 +1208,7 @@ function App() {
           <div style={{background:"#fff",borderRadius:16,width:"100%",maxWidth:640,maxHeight:"90vh",overflow:"auto",boxShadow:"0 20px 60px rgba(0,0,0,.2)"}}>
             {/* Modal header */}
             <div style={{padding:"18px 24px",borderBottom:"1px solid #eaecf0",display:"flex",justifyContent:"space-between",alignItems:"center",position:"sticky",top:0,background:"#fff",borderRadius:"16px 16px 0 0",zIndex:1}}>
-              <h3 style={{fontSize:16,fontWeight:700,margin:0}}>📄 공문 생성</h3>
+              <h3 style={{fontSize:16,fontWeight:700,margin:0}}>📄 공문 생성{docModal.mode==="combined"?" (2건 합치기)":""}</h3>
               <button onClick={()=>setDocModal(null)} style={{border:"none",background:"none",fontSize:20,color:"#94a3b8",padding:"4px 8px"}}>✕</button>
             </div>
 
