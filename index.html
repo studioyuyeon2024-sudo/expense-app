@@ -409,7 +409,7 @@ function App() {
   // Save 사용목적 to row.extra when a document is generated
   const saveDocPurpose = (docTitle, modal) => {
     const ids = modal.mode === "combined" ? modal.rows.map(r=>r.id) : [modal.row.id];
-    const updated = rows.map(r => ids.includes(r.id) ? {...r, extra:{...r.extra, "사용목적": docTitle}} : r);
+    const updated = rows.map(r => ids.includes(r.id) ? {...r, extra:{...r.extra, "사용목적": docTitle, "사용내역": docTitle}} : r);
     persist(updated);
   };
 
@@ -897,7 +897,7 @@ function App() {
           </div>
         </div>
         <div style={{padding:"6px 8px",flex:1}}>
-          {[["home","📊","대시보드"],["upload","📤","업로드"],["history","📋","전체내역"],["preview","📑","미리보기"],["budget","💰","예산관리"],["disclosure","📊","정보공개"]].map(([id,ic,lb])=>(
+          {[["home","📊","대시보드"],["upload","📤","업로드"],["history","📋","사용내역 분류"],["preview","📑","사용내역 보기"],["budget","💰","예산관리"],["disclosure","📊","정보공개"]].map(([id,ic,lb])=>(
             <button key={id} onClick={()=>{setView(id);setSelected(new Set());setDocSelected(new Set());setFilterTab("all");setFilterMonth("all");setSearchText("");}}
               style={{...S.nb,...((view===id||(view==="classify"&&id==="upload"))?S.nbA:{})}}>
               <span style={{fontSize:14}}>{ic}</span><span>{lb}</span>
@@ -977,7 +977,7 @@ function App() {
             <div style={S.sec}>
               <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
                 <h2 style={S.st}>최근 내역</h2>
-                <button style={{border:"none",background:"none",color:"#6366f1",fontSize:13,fontWeight:600}} onClick={()=>setView("history")}>전체 보기 →</button>
+                <button style={{border:"none",background:"none",color:"#6366f1",fontSize:13,fontWeight:600}} onClick={()=>setView("history")}>사용내역 분류 →</button>
               </div>
               {rows.slice(0,5).map(r=>(
                 <div key={r.id} style={{display:"flex",alignItems:"center",gap:12,padding:"11px 0",borderBottom:"1px solid #f8fafc"}}>
@@ -1019,7 +1019,7 @@ function App() {
               <div style={{fontSize:46,marginBottom:10}}>✅</div>
               <h3 style={{fontSize:15,fontWeight:600,color:"#334155"}}>새로 추가할 내역이 없습니다</h3>
               <p style={{color:"#94a3b8",marginBottom:16,fontSize:13}}>모두 이미 저장되어 있습니다</p>
-              <button style={S.pri} onClick={()=>setView("history")}>전체 내역 보기</button>
+              <button style={S.pri} onClick={()=>setView("history")}>사용내역 분류</button>
             </div>
           ) : (<>
             <FilterBar isNew={true}/>
@@ -1034,7 +1034,7 @@ function App() {
         {/* HISTORY */}
         {view==="history"&&<div style={{animation:"fadeUp .35s ease"}}>
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",flexWrap:"wrap",gap:10}}>
-            <div><h1 style={S.pt}>전체 내역</h1><p style={S.pd}>누적 {rows.length}건</p></div>
+            <div><h1 style={S.pt}>사용내역 분류</h1><p style={S.pd}>누적 {rows.length}건</p></div>
             <button style={S.pri} onClick={()=>setView("upload")}>📤 새 파일 추가</button>
           </div>
           {!rows.length ? <div style={S.empty}><p style={{color:"#94a3b8"}}>저장된 내역이 없습니다</p></div> : (<>
@@ -1083,7 +1083,7 @@ function App() {
           return <div style={{animation:"fadeUp .35s ease"}}>
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",flexWrap:"wrap",gap:10,marginBottom:8}}>
               <div>
-                <h1 style={S.pt}>미리보기</h1>
+                <h1 style={S.pt}>사용내역 보기</h1>
                 <p style={S.pd}>셀을 클릭하면 직접 편집할 수 있습니다</p>
               </div>
               <button style={S.pri} onClick={exportXLSX} disabled={!rows.length}>📥 엑셀 다운로드</button>
@@ -1093,7 +1093,7 @@ function App() {
               <div style={S.empty}>
                 <div style={{fontSize:48,marginBottom:12}}>📑</div>
                 <h3 style={{fontSize:16,fontWeight:700,color:"#334155",marginBottom:6}}>분류된 데이터가 없습니다</h3>
-                <p style={{color:"#94a3b8",fontSize:13}}>전체 내역에서 먼저 분류를 완료해 주세요</p>
+                <p style={{color:"#94a3b8",fontSize:13}}>사용내역 분류에서 먼저 분류를 완료해 주세요</p>
               </div>
             ) : (<>
               {/* Controls row */}
@@ -1215,6 +1215,7 @@ function App() {
                               <th key={fi} style={{...S.pvTh,...(f==="금액"||f==="지출"||f===cat.amountField?{textAlign:"right"}:{})}}>{f}</th>
                             ))}
                             <th style={{...S.pvTh,width:40}}/>
+                            <th style={{...S.pvTh,minWidth:120,textAlign:"center"}}>진행상태</th>
                           </tr>
                         </thead>
                         <tbody>
@@ -1272,6 +1273,25 @@ function App() {
                                 <button onClick={()=>del(row.id)} style={{...S.tiny,color:"#ef4444",opacity:.5}} title="삭제"
                                   onMouseEnter={e=>e.currentTarget.style.opacity="1"} onMouseLeave={e=>e.currentTarget.style.opacity=".5"}>✕</button>
                               </td>
+                              <td style={{...S.pvTd,textAlign:"center",whiteSpace:"nowrap"}}>
+                                {(()=>{
+                                  const st = row.extra?.["진행상태"] || "";
+                                  const steps = [{key:"공문",label:"공문"},{key:"결재",label:"e호조"}];
+                                  return <div style={{display:"flex",gap:4,justifyContent:"center"}}>
+                                    {steps.map(s=>{
+                                      const done = st.includes(s.key);
+                                      return <button key={s.key} onClick={()=>{
+                                        let next;
+                                        if(done) next = st.replace(s.key,"").replace(/,+/g,",").replace(/^,|,$/g,"");
+                                        else next = st ? st+","+s.key : s.key;
+                                        persist(rows.map(r=>r.id===row.id?{...r,extra:{...r.extra,"진행상태":next}}:r));
+                                      }} style={{padding:"2px 8px",borderRadius:4,fontSize:10,fontWeight:700,border:"1px solid",cursor:"pointer",fontFamily:"inherit",transition:"all .1s",
+                                        background:done?"#f0fdf4":"#fff",color:done?"#16a34a":"#94a3b8",borderColor:done?"#86efac":"#e2e8f0"
+                                      }}>{done?"✓ ":""}{s.label}</button>;
+                                    })}
+                                  </div>;
+                                })()}
+                              </td>
                             </tr>
                           ))}
                         </tbody>
@@ -1283,6 +1303,7 @@ function App() {
                               const isAmt = f==="금액"||f==="지출"||f===cat.amountField;
                               return <td key={fi} style={{...S.pvTd,...(isAmt?{textAlign:"right",fontWeight:800,fontSize:14,color:accent}:{})}}>{isAmt?fmt(catTotal)+"원":""}</td>;
                             })}
+                            <td style={S.pvTd}/>
                             <td style={S.pvTd}/>
                           </tr>
                         </tfoot>
