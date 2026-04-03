@@ -1233,7 +1233,7 @@ function App() {
 
               {/* Category tables */}
               {activeCats.map(cat => {
-                const catRows = rows.filter(r=>r.catId===cat.id);
+                const catRows = rows.filter(r=>r.catId===cat.id).sort((a,b)=>a.date.localeCompare(b.date));
                 const catTotal = catRows.reduce((s,r)=>s+r.amount,0);
 
                 return (
