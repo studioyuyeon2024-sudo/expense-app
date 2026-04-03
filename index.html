@@ -377,14 +377,15 @@ function App() {
     return { title, body: lines.join("\n") };
   };
 
-  // Generate combined document for 2 expenses
-  // 제목/intro는 기존 1건 템플릿과 동일, 본문만 2건 형식으로 변경
-  // 금액: 합산, 일시: 같은 날짜+시간 "/ " 구분, 장소: 큰 금액 건 + "외 1"
+  // Generate combined document for 2+ expenses
+  // 금액 가장 큰 건 = 메인, 나머지 = 서브
+  // 금액: 전체 합산, 일시: 메인 시간 / 서브 중 가장 빠른 시간, 장소: 메인 장소 + "외 1"
   const generateCombinedDoc = (docRows, tmpl, titleObj, nVal) => {
     // Sort: larger amount first
     const sorted = [...docRows].sort((a,b) => b.amount - a.amount);
-    const main = sorted[0], sub = sorted[1];
-    const totalAmt = main.amount + sub.amount;
+    const main = sorted[0];
+    const subs = sorted.slice(1);
+    const totalAmt = sorted.reduce((s,r) => s + r.amount, 0);
     const amtKr = numToKorean(totalAmt);
     const meal = getMealType(main.date);
     const dateShort = (() => { try { const [y,m,d]=main.date.split(" ")[0].split("-"); return `${parseInt(m)}.${parseInt(d)}.`; } catch { return ""; } })();
@@ -399,10 +400,12 @@ function App() {
     if (titleObj.hasN && nVal) intro = intro.replace("N", nVal);
     if (intro.includes("{meal}")) intro = intro.replace("{meal}", meal);
 
-    // Date: same date with two times "HH:MM / HH:MM"
+    // Date: 메인 시간 / 서브 중 가장 빠른 결제 시간
     const mainDate = fmtDocDate(main.date);
+    // 서브 중 시간순 정렬하여 가장 빠른 건의 시간
+    const subsSorted = [...subs].sort((a,b) => a.date.localeCompare(b.date));
     const subTimeShort = (() => {
-      try { const t = sub.date.split(" ")[1]||""; return t.split(":").slice(0,2).join(":"); } catch { return ""; }
+      try { const t = subsSorted[0].date.split(" ")[1]||""; return t.split(":").slice(0,2).join(":"); } catch { return ""; }
     })();
     const dateStr = `${mainDate} / ${subTimeShort}`;
 
@@ -410,7 +413,7 @@ function App() {
     const locDetail = main.extra?.["장소상세"] ? `(${main.extra["장소상세"]})` : "";
     const placeStr = `${main.place} 외 1${locDetail}`;
 
-    const people = main.extra?.["인원"] || main.extra?.["참석자"] || sub.extra?.["인원"] || sub.extra?.["참석자"] || "N";
+    const people = main.extra?.["인원"] || main.extra?.["참석자"] || subs.find(r=>r.extra?.["인원"])?.extra?.["인원"] || subs.find(r=>r.extra?.["참석자"])?.extra?.["참석자"] || "N";
 
     let lines = [];
     lines.push(`제목  ${title}`);
@@ -454,7 +457,7 @@ function App() {
 
   const openDocModalMulti = (selRows, catId) => {
     const tmpl = DOC_TEMPLATES[catId];
-    if (!tmpl || selRows.length !== 2) return;
+    if (!tmpl || selRows.length < 2) return;
     setDocModal({ row: selRows[0], rows: selRows, catId, step: "select", titleId: "", nValue: "", mode:"combined" });
   };
 
@@ -465,7 +468,7 @@ function App() {
     if (titleObj?.hasN && !docModal.nValue) {
       setDocModal({ ...docModal, titleId, step: "inputN" });
     } else {
-      const doc = docModal.mode==="combined" && docModal.rows?.length===2
+      const doc = docModal.mode==="combined" && docModal.rows?.length>=2
         ? generateCombinedDoc(docModal.rows, tmpl, titleObj, docModal.nValue)
         : generateDoc(docModal.row, tmpl, titleObj, docModal.nValue);
       setDocModal({ ...docModal, titleId, step: "preview", docText: doc.body, docTitle: doc.title });
@@ -477,7 +480,7 @@ function App() {
     if (!docModal) return;
     const tmpl = DOC_TEMPLATES[docModal.catId];
     const titleObj = tmpl.titles.find(t => t.id === docModal.titleId);
-    const doc = docModal.mode==="combined" && docModal.rows?.length===2
+    const doc = docModal.mode==="combined" && docModal.rows?.length>=2
       ? generateCombinedDoc(docModal.rows, tmpl, titleObj, docModal.nValue)
       : generateDoc(docModal.row, tmpl, titleObj, docModal.nValue);
     setDocModal({ ...docModal, step: "preview", docText: doc.body, docTitle: doc.title });
@@ -1245,13 +1248,13 @@ function App() {
                         </div>
                         {DOC_TEMPLATES[cat.id] && (()=>{
                           const selCount = catRows.filter(r=>docSelected.has(r.id)).length;
-                          return <button disabled={selCount<1||selCount>2}
+                          return <button disabled={selCount<1}
                             onClick={()=>{
                               const selRows = catRows.filter(r=>docSelected.has(r.id));
                               if(selRows.length===1) openDocModal(selRows[0]);
-                              else if(selRows.length===2) openDocModalMulti(selRows, cat.id);
+                              else if(selRows.length>=2) openDocModalMulti(selRows, cat.id);
                             }}
-                            style={{padding:"5px 14px",background:selCount>=1&&selCount<=2?"#6366f1":"#e2e8f0",color:selCount>=1&&selCount<=2?"#fff":"#94a3b8",
+                            style={{padding:"5px 14px",background:selCount>=1?"#6366f1":"#e2e8f0",color:selCount>=1?"#fff":"#94a3b8",
                               border:"none",borderRadius:6,fontSize:11.5,fontWeight:700,fontFamily:"inherit"}}>
                             공문 생성{selCount>0?` (${selCount}건)`:""}
                           </button>;
@@ -1636,7 +1639,7 @@ function App() {
             <div style={{padding:"20px 26px",borderBottom:"1px solid var(--gray-200)",display:"flex",justifyContent:"space-between",alignItems:"center",position:"sticky",top:0,background:"rgba(255,255,255,.95)",backdropFilter:"blur(12px)",borderRadius:"var(--radius-xl) var(--radius-xl) 0 0",zIndex:1}}>
               <h3 style={{fontSize:16,fontWeight:800,margin:0,display:"flex",alignItems:"center",gap:8}}>
                 <span style={{width:28,height:28,borderRadius:8,background:"var(--primary-bg)",display:"inline-flex",alignItems:"center",justifyContent:"center",fontSize:14}}>📄</span>
-                공문 생성{docModal.mode==="combined"?" (2건 합치기)":""}
+                공문 생성{docModal.mode==="combined"?` (${docModal.rows.length}건 합치기)`:""}
               </h3>
               <button onClick={()=>setDocModal(null)} style={{border:"none",background:"var(--gray-100)",fontSize:14,color:"var(--gray-400)",padding:"6px 8px",borderRadius:6,transition:"all var(--transition-fast)"}}
                 onMouseEnter={e=>{e.currentTarget.style.background="var(--gray-200)";}} onMouseLeave={e=>{e.currentTarget.style.background="var(--gray-100)";}}>✕</button>
