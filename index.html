@@ -266,6 +266,7 @@ function App() {
   const [discTab, setDiscTab] = useState("일반지출");
   const [catNames, setCatNames] = useState({}); // {catId: "오버라이드 이름"}
   const [editCatName, setEditCatName] = useState(null); // catId being edited
+  const [sideOpen, setSideOpen] = useState(false); // hamburger sidebar toggle
   const fRef = useRef(null);
 
   // Derive preset data
@@ -889,25 +890,35 @@ function App() {
         borderLeft:`4px solid ${toast.type==="ok"?"#16a34a":"#dc2626"}`,boxShadow:"0 4px 16px rgba(0,0,0,.08)",animation:"fadeIn .25s"
       }}>{toast.type==="ok"?"✓":"⚠"} {toast.msg}</div>}
 
-      <nav style={S.nav}>
+      {/* Sidebar overlay */}
+      {sideOpen && <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,.35)",zIndex:998}} onClick={()=>setSideOpen(false)}/>}
+
+      {/* Sidebar */}
+      <nav style={{...S.nav,position:"fixed",left:sideOpen?0:-240,zIndex:999,width:240,transition:"left .25s ease",boxShadow:sideOpen?"4px 0 24px rgba(0,0,0,.2)":"none"}}>
         <div style={{padding:"14px 14px 16px",borderBottom:"1px solid rgba(255,255,255,.06)"}}>
-          <div style={{display:"flex",alignItems:"center",gap:8}}>
-            <div style={{width:26,height:26,borderRadius:7,background:"linear-gradient(135deg,#6366f1,#10b981)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:13,fontWeight:900,color:"#fff"}}>₩</div>
-            <span style={{fontSize:15,fontWeight:800,color:"#fff",letterSpacing:"-0.3px"}}>지출관리</span>
+          <div style={{display:"flex",alignItems:"center",gap:8,justifyContent:"space-between"}}>
+            <div style={{display:"flex",alignItems:"center",gap:8}}>
+              <div style={{width:26,height:26,borderRadius:7,background:"linear-gradient(135deg,#6366f1,#10b981)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:13,fontWeight:900,color:"#fff"}}>₩</div>
+              <span style={{fontSize:15,fontWeight:800,color:"#fff",letterSpacing:"-0.3px"}}>지출관리</span>
+            </div>
+            <button onClick={()=>setSideOpen(false)} style={{border:"none",background:"none",color:"#64748b",fontSize:18,padding:"2px 6px",cursor:"pointer"}}>✕</button>
           </div>
         </div>
+        <div style={{padding:"10px 12px",fontSize:14,color:"#fff",fontWeight:800,textAlign:"center",background:"linear-gradient(135deg,#6366f1,#4f46e5)",borderRadius:8,margin:"8px 8px 4px",letterSpacing:"-0.3px"}}>
+          {presetName}
+        </div>
         <div style={{padding:"6px 8px",flex:1}}>
-          {[["home","📊","대시보드"],["upload","📤","업로드"],["history","📋","사용내역 분류"],["preview","📑","사용내역 보기"],["budget","💰","예산관리"],["disclosure","📊","정보공개"]].map(([id,ic,lb])=>(
-            <button key={id} onClick={()=>{setView(id);setSelected(new Set());setDocSelected(new Set());setFilterTab("미분류");setFilterMonth("all");setSearchText("");}}
+          {[["home","📊","대시보드"],["history","📋","사용내역 분류"],["preview","📑","사용내역 보기"],["budget","💰","예산관리"],["disclosure","📊","정보공개"]].map(([id,ic,lb])=>(
+            <button key={id} onClick={()=>{setView(id);setSideOpen(false);setSelected(new Set());setDocSelected(new Set());setFilterTab("미분류");setFilterMonth("all");setSearchText("");}}
               style={{...S.nb,...((view===id||(view==="classify"&&id==="upload"))?S.nbA:{})}}>
               <span style={{fontSize:14}}>{ic}</span><span>{lb}</span>
             </button>
           ))}
         </div>
         <div style={{padding:"6px 8px",borderTop:"1px solid rgba(255,255,255,.06)",display:"flex",flexDirection:"column",gap:1}}>
-          <div style={{padding:"10px 12px",fontSize:14,color:"#fff",fontWeight:800,textAlign:"center",background:"linear-gradient(135deg,#6366f1,#4f46e5)",borderRadius:8,marginBottom:6,letterSpacing:"-0.3px"}}>
-            {presetName}
-          </div>
+          <button style={S.nb} onClick={()=>{setView("upload");setSideOpen(false);}}>
+            <span style={{fontSize:14}}>📤</span><span>업로드</span>
+          </button>
           <button style={S.ns} onClick={exportXLSX} disabled={!rows.length}>📥 엑셀 내보내기</button>
           <button style={S.ns} onClick={saveToFile} disabled={!rows.length}>💾 파일 백업</button>
           <button style={S.ns} onClick={()=>jsonRef.current?.click()}>📂 백업 불러오기</button>
@@ -917,7 +928,17 @@ function App() {
         </div>
       </nav>
 
-      <main style={S.main}>
+      <main style={{...S.main,width:"100%"}}>
+        {/* Top bar with hamburger */}
+        <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:14}}>
+          <button onClick={()=>setSideOpen(true)} style={{border:"none",background:"#0f172a",color:"#fff",borderRadius:8,padding:"8px 10px",fontSize:16,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",lineHeight:1}}>
+            <span style={{fontSize:18}}>☰</span>
+          </button>
+          <div style={{display:"flex",alignItems:"center",gap:8}}>
+            <div style={{width:22,height:22,borderRadius:6,background:"linear-gradient(135deg,#6366f1,#10b981)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,fontWeight:900,color:"#fff"}}>₩</div>
+            <span style={{fontSize:14,fontWeight:700,color:"#1e293b"}}>{presetName}</span>
+          </div>
+        </div>
         {/* HOME */}
         {view==="home"&&<div style={{animation:"fadeUp .35s ease"}}>
           <h1 style={S.pt}>대시보드</h1><p style={S.pd}>지출 현황을 한눈에 확인하세요</p>
@@ -1611,7 +1632,7 @@ function App() {
 
 const S = {
   wrap:{display:"flex",minHeight:"100vh",background:"#f0f2f7",color:"#0f172a"},
-  nav:{width:192,background:"#0f172a",display:"flex",flexDirection:"column",position:"sticky",top:0,height:"100vh",flexShrink:0,overflow:"hidden"},
+  nav:{width:240,background:"#0f172a",display:"flex",flexDirection:"column",top:0,height:"100vh",flexShrink:0,overflow:"auto"},
   nb:{display:"flex",alignItems:"center",gap:8,padding:"8px 12px",width:"100%",border:"none",borderRadius:7,background:"transparent",fontSize:13,fontWeight:500,color:"#94a3b8",textAlign:"left",fontFamily:"inherit",marginBottom:1},
   nbA:{background:"rgba(255,255,255,.08)",color:"#fff",fontWeight:700},
   ns:{padding:"6px 12px",border:"none",borderRadius:5,background:"transparent",fontSize:11,fontWeight:500,color:"#64748b",textAlign:"left",fontFamily:"inherit",width:"100%"},
