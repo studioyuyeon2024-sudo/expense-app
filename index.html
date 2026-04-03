@@ -344,7 +344,8 @@ function App() {
   };
 
   // Generate combined document for 2 expenses
-  // Format: 큰 금액 건이 장소 대표, 나머지는 "외 1", 같은 날짜 시간만 "/ " 구분
+  // 제목/intro는 기존 1건 템플릿과 동일, 본문만 2건 형식으로 변경
+  // 금액: 합산, 일시: 같은 날짜+시간 "/ " 구분, 장소: 큰 금액 건 + "외 1"
   const generateCombinedDoc = (docRows, tmpl, titleObj, nVal) => {
     // Sort: larger amount first
     const sorted = [...docRows].sort((a,b) => b.amount - a.amount);
@@ -354,13 +355,10 @@ function App() {
     const meal = getMealType(main.date);
     const dateShort = (() => { try { const [y,m,d]=main.date.split(" ")[0].split("-"); return `${parseInt(m)}.${parseInt(d)}.`; } catch { return ""; } })();
 
-    // Title: insert 오찬/만찬 before "간담" if present
-    let titleLabel = titleObj.label;
-    if (titleObj.hasN && nVal) titleLabel = titleLabel.replace("N", nVal);
-    if (titleLabel.includes("간담") && !titleLabel.includes("오찬") && !titleLabel.includes("만찬")) {
-      titleLabel = titleLabel.replace("간담", `${meal} 간담`);
-    }
-    let title = `(교육)${titleLabel}`;
+    // Title: 기존 템플릿과 동일 (1건용과 같은 방식)
+    let title = titleObj.label;
+    if (titleObj.hasN && nVal) title = title.replace("N", nVal);
+    title = `(교육)${title}`;
     if (!titleObj.noAttendee && !titleObj.isStaff && dateShort) title += `(${dateShort})`;
 
     let intro = titleObj.intro;
