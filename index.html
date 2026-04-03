@@ -1248,16 +1248,48 @@ function App() {
                         </div>
                         {DOC_TEMPLATES[cat.id] && (()=>{
                           const selCount = catRows.filter(r=>docSelected.has(r.id)).length;
-                          return <button disabled={selCount<1}
-                            onClick={()=>{
-                              const selRows = catRows.filter(r=>docSelected.has(r.id));
-                              if(selRows.length===1) openDocModal(selRows[0]);
-                              else if(selRows.length>=2) openDocModalMulti(selRows, cat.id);
-                            }}
-                            style={{padding:"5px 14px",background:selCount>=1?"#6366f1":"#e2e8f0",color:selCount>=1?"#fff":"#94a3b8",
-                              border:"none",borderRadius:6,fontSize:11.5,fontWeight:700,fontFamily:"inherit"}}>
-                            공문 생성{selCount>0?` (${selCount}건)`:""}
-                          </button>;
+                          const selIds = new Set(catRows.filter(r=>docSelected.has(r.id)).map(r=>r.id));
+                          // 선택된 행들의 진행상태 확인
+                          const selRows_ = catRows.filter(r=>selIds.has(r.id));
+                          const allDoc = selRows_.length>0 && selRows_.every(r=>(r.extra?.["진행상태"]||"").includes("공문"));
+                          const allAppr = selRows_.length>0 && selRows_.every(r=>(r.extra?.["진행상태"]||"").includes("결재"));
+                          const batchStatus = (key) => {
+                            const updated = rows.map(r => {
+                              if (!selIds.has(r.id)) return r;
+                              const st = r.extra?.["진행상태"] || "";
+                              const has = st.includes(key);
+                              let next;
+                              if (has) next = st.replace(key,"").replace(/,+/g,",").replace(/^,|,$/g,"");
+                              else next = st ? st+","+key : key;
+                              return {...r, extra:{...r.extra, "진행상태": next}};
+                            });
+                            persist(updated);
+                          };
+                          return <div style={{display:"flex",gap:6,alignItems:"center"}}>
+                            <button disabled={selCount<1}
+                              onClick={()=>{
+                                const selRows = catRows.filter(r=>docSelected.has(r.id));
+                                if(selRows.length===1) openDocModal(selRows[0]);
+                                else if(selRows.length>=2) openDocModalMulti(selRows, cat.id);
+                              }}
+                              style={{padding:"5px 14px",background:selCount>=1?"#6366f1":"#e2e8f0",color:selCount>=1?"#fff":"#94a3b8",
+                                border:"none",borderRadius:6,fontSize:11.5,fontWeight:700,fontFamily:"inherit"}}>
+                              공문 생성{selCount>0?` (${selCount}건)`:""}
+                            </button>
+                            {selCount>=1 && <>
+                              <span style={{color:"var(--gray-300)",fontSize:12}}>│</span>
+                              <button onClick={()=>batchStatus("공문")}
+                                style={{padding:"3px 10px",borderRadius:4,fontSize:10,fontWeight:700,border:"1px solid",cursor:"pointer",fontFamily:"inherit",transition:"all .1s",
+                                  background:allDoc?"#f0fdf4":"#fff",color:allDoc?"#16a34a":"#64748b",borderColor:allDoc?"#86efac":"#d1d5db"}}>
+                                {allDoc?"✓ ":""}공문 ({selCount})
+                              </button>
+                              <button onClick={()=>batchStatus("결재")}
+                                style={{padding:"3px 10px",borderRadius:4,fontSize:10,fontWeight:700,border:"1px solid",cursor:"pointer",fontFamily:"inherit",transition:"all .1s",
+                                  background:allAppr?"#f0fdf4":"#fff",color:allAppr?"#16a34a":"#64748b",borderColor:allAppr?"#86efac":"#d1d5db"}}>
+                                {allAppr?"✓ ":""}e호조 ({selCount})
+                              </button>
+                            </>}
+                          </div>;
                         })()}
                         <button onClick={()=>{
                           const wb = XLSX.utils.book_new();
