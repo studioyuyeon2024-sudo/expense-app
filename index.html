@@ -75,7 +75,6 @@ const PRESET_NAMES = Object.keys(PRESETS);
 const fmt = (n) => n ? Number(n).toLocaleString("ko-KR") : "0";
 const parseAmt = (s) => parseInt(String(s||"").replace(/[^0-9-]/g,""),10) || 0;
 const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2,7);
-const KEY = "expense-app-v2";
 
 // Korean number converter
 function numToKorean(n) {
@@ -182,6 +181,22 @@ const DOC_TEMPLATES_교육 = {
 };
 PRESETS["교육위원회"].docTemplates = DOC_TEMPLATES_교육;
 
+// Custom preset management (stored in localStorage)
+const CUSTOM_PRESETS_KEY = "expense-app-custom-presets";
+function loadCustomPresets() {
+  try { const d = localStorage.getItem(CUSTOM_PRESETS_KEY); return d ? JSON.parse(d) : {}; } catch { return {}; }
+}
+function saveCustomPresets(presets) {
+  try { localStorage.setItem(CUSTOM_PRESETS_KEY, JSON.stringify(presets)); } catch {}
+}
+function getAllPresets() {
+  const custom = loadCustomPresets();
+  return {...PRESETS, ...custom};
+}
+function getAllPresetNames() {
+  return Object.keys(getAllPresets());
+}
+
 // Preset helper functions
 const PRESET_KEY = "expense-app-preset";
 function getStorageKey(presetName) { return `expense-app-v2-${presetName}`; }
@@ -247,7 +262,9 @@ function App() {
   const fRef = useRef(null);
 
   // Derive preset data
-  const currentPreset = PRESETS[presetName] || null;
+  const [allPresets, setAllPresets] = useState(() => getAllPresets());
+  const [setupMode, setSetupMode] = useState(null); // null | "create" | "edit"
+  const currentPreset = allPresets[presetName] || null;
   const CATEGORIES = useMemo(() => currentPreset ? currentPreset.categories : {"일반지출":[],"일상경비":[]}, [currentPreset]);
   const DOC_TEMPLATES = useMemo(() => currentPreset ? (currentPreset.docTemplates || {}) : {}, [currentPreset]);
   const ALL_CATS = useMemo(() => [
@@ -258,15 +275,26 @@ function App() {
 
   // Preset selection handler
   const selectPreset = (name) => {
+    const ap = getAllPresets();
+    setAllPresets(ap);
     savePresetChoice(name);
     setPresetName(name);
-    const preset = PRESETS[name];
+    const preset = ap[name];
     const defB = getDefaultBudgets(preset.categories);
     const d = loadData(name);
     setRows(d.rows||[]);
     setBudgets({...defB,...(d.budgets||{})});
     setView("home");
+    setSetupMode(null);
     setLoading(false);
+  };
+
+  // Save custom preset
+  const saveNewPreset = (name, categories) => {
+    const custom = loadCustomPresets();
+    custom[name] = { categories, docTemplates: {} };
+    saveCustomPresets(custom);
+    setAllPresets(getAllPresets());
   };
 
   const updateBudget = (catId, val) => {
@@ -315,26 +343,42 @@ function App() {
     return { title, body: lines.join("\n") };
   };
 
-  // Generate combined document for 2 expenses (placeholder - will be refined with user's example)
+  // Generate combined document for 2 expenses
+  // Format: 큰 금액 건이 장소 대표, 나머지는 "외 1", 같은 날짜 시간만 "/ " 구분
   const generateCombinedDoc = (docRows, tmpl, titleObj, nVal) => {
-    const row1 = docRows[0], row2 = docRows[1];
-    const totalAmt = row1.amount + row2.amount;
+    // Sort: larger amount first
+    const sorted = [...docRows].sort((a,b) => b.amount - a.amount);
+    const main = sorted[0], sub = sorted[1];
+    const totalAmt = main.amount + sub.amount;
     const amtKr = numToKorean(totalAmt);
-    const dateShort1 = (() => { try { const [y,m,d]=row1.date.split(" ")[0].split("-"); return `${parseInt(m)}.${parseInt(d)}.`; } catch { return ""; } })();
+    const meal = getMealType(main.date);
+    const dateShort = (() => { try { const [y,m,d]=main.date.split(" ")[0].split("-"); return `${parseInt(m)}.${parseInt(d)}.`; } catch { return ""; } })();
 
-    let title = titleObj.label;
-    if (titleObj.hasN && nVal) title = title.replace("N", nVal);
-    title = `(교육)${title}`;
-    if (!titleObj.noAttendee && !titleObj.isStaff && dateShort1) title += `(${dateShort1})`;
+    // Title: insert 오찬/만찬 before "간담" if present
+    let titleLabel = titleObj.label;
+    if (titleObj.hasN && nVal) titleLabel = titleLabel.replace("N", nVal);
+    if (titleLabel.includes("간담") && !titleLabel.includes("오찬") && !titleLabel.includes("만찬")) {
+      titleLabel = titleLabel.replace("간담", `${meal} 간담`);
+    }
+    let title = `(교육)${titleLabel}`;
+    if (!titleObj.noAttendee && !titleObj.isStaff && dateShort) title += `(${dateShort})`;
 
     let intro = titleObj.intro;
     if (titleObj.hasN && nVal) intro = intro.replace("N", nVal);
-    const meal1 = getMealType(row1.date);
-    if (intro.includes("{meal}")) intro = intro.replace("{meal}", meal1);
+    if (intro.includes("{meal}")) intro = intro.replace("{meal}", meal);
 
-    const loc1 = row1.place + (row1.extra?.["장소상세"] ? ` ${row1.extra["장소상세"]}` : "");
-    const loc2 = row2.place + (row2.extra?.["장소상세"] ? ` ${row2.extra["장소상세"]}` : "");
-    const people = row1.extra?.["인원"] || row1.extra?.["참석자"] || "N";
+    // Date: same date with two times "HH:MM / HH:MM"
+    const mainDate = fmtDocDate(main.date);
+    const subTimeShort = (() => {
+      try { const t = sub.date.split(" ")[1]||""; return t.split(":").slice(0,2).join(":"); } catch { return ""; }
+    })();
+    const dateStr = `${mainDate} / ${subTimeShort}`;
+
+    // Place: larger amount place + "외 1" + optional location detail
+    const locDetail = main.extra?.["장소상세"] ? `(${main.extra["장소상세"]})` : "";
+    const placeStr = `${main.place} 외 1${locDetail}`;
+
+    const people = main.extra?.["인원"] || main.extra?.["참석자"] || sub.extra?.["인원"] || sub.extra?.["참석자"] || "N";
 
     let lines = [];
     lines.push(`제목  ${title}`);
@@ -342,12 +386,8 @@ function App() {
     lines.push(`  ${intro}`);
     lines.push("");
     lines.push(`  1. ${titleObj.amtLabel} : 금${fmt(totalAmt)}원(금${amtKr}원)`);
-    lines.push(`  2. 일     시`);
-    lines.push(`    가. ${fmtDocDate(row1.date)}`);
-    lines.push(`    나. ${fmtDocDate(row2.date)}`);
-    lines.push(`  3. 장     소`);
-    lines.push(`    가. ${loc1}`);
-    lines.push(`    나. ${loc2}`);
+    lines.push(`  2. 일     시 : ${dateStr}`);
+    lines.push(`  3. 장     소 : ${placeStr}`);
     if (titleObj.참석label && titleObj.참석desc) {
       lines.push(`  4. ${titleObj.참석label} : ${people}명(${titleObj.참석desc})`);
       lines.push(`  5. 지출방법 : ${tmpl.지출방법}`);
@@ -551,25 +591,142 @@ function App() {
   if(loading) return React.createElement("div",{style:{display:"flex",alignItems:"center",justifyContent:"center",height:"100vh"}},
     React.createElement("p",{style:{color:"#94a3b8",fontSize:15}},"불러오는 중..."));
 
-  // Preset selection screen
-  if(!presetName) return (
-    <div style={{display:"flex",alignItems:"center",justifyContent:"center",minHeight:"100vh",background:"#f0f2f7",padding:20}}>
-      <div style={{background:"#fff",borderRadius:20,padding:"48px 40px",maxWidth:440,width:"100%",boxShadow:"0 8px 32px rgba(0,0,0,.08)",textAlign:"center"}}>
-        <div style={{width:56,height:56,borderRadius:14,background:"linear-gradient(135deg,#6366f1,#10b981)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:28,fontWeight:900,color:"#fff",margin:"0 auto 20px"}}>₩</div>
-        <h1 style={{fontSize:22,fontWeight:800,marginBottom:6,letterSpacing:"-0.5px"}}>지출관리</h1>
-        <p style={{fontSize:13,color:"#94a3b8",marginBottom:28}}>사용할 과(부서)를 선택하세요</p>
-        <div style={{display:"flex",flexDirection:"column",gap:10}}>
-          {PRESET_NAMES.map(name=>(
-            <button key={name} onClick={()=>selectPreset(name)}
-              style={{padding:"16px 20px",border:"2px solid #e2e8f0",borderRadius:12,background:"#fff",fontSize:15,fontWeight:600,
-                fontFamily:"inherit",color:"#1e293b",cursor:"pointer",transition:"all .15s"}}
-              onMouseEnter={e=>{e.currentTarget.style.borderColor="#6366f1";e.currentTarget.style.background="#f5f3ff";}}
-              onMouseLeave={e=>{e.currentTarget.style.borderColor="#e2e8f0";e.currentTarget.style.background="#fff";}}>
-              {name}
+  // Preset creation form component
+  const PresetCreator = () => {
+    const [newName, setNewName] = useState("");
+    const [step, setStep] = useState("name"); // "name" | "categories"
+    const [cats, setCats] = useState({"일반지출":[], "일상경비":[]});
+    const [addTab, setAddTab] = useState("일반지출");
+    const [addForm, setAddForm] = useState({name:"", budget:0});
+
+    const addCat = () => {
+      if(!addForm.name.trim()) return;
+      const tab = addTab;
+      const prefix = tab === "일반지출" ? "g" : "d";
+      const existing = cats[tab] || [];
+      const id = prefix + (existing.length + 1);
+      const newCat = {
+        id, name: addForm.name.trim(), budget: parseAmt(addForm.budget),
+        fields: ["구분","금액","일자","사용내역"],
+        dateField: "일자", amountField: "금액", placeField: null
+      };
+      setCats({...cats, [tab]: [...existing, newCat]});
+      setAddForm({name:"", budget:0});
+    };
+
+    const removeCat = (tab, idx) => {
+      const updated = [...cats[tab]];
+      updated.splice(idx, 1);
+      // Re-assign IDs
+      const prefix = tab === "일반지출" ? "g" : "d";
+      updated.forEach((c, i) => { c.id = prefix + (i + 1); });
+      setCats({...cats, [tab]: updated});
+    };
+
+    const finish = () => {
+      const total = (cats["일반지출"]?.length||0) + (cats["일상경비"]?.length||0);
+      if(total === 0) { alert("최소 1개의 카테고리를 추가하세요."); return; }
+      saveNewPreset(newName, cats);
+      selectPreset(newName);
+    };
+
+    if(step === "name") return (
+      <div style={{textAlign:"center"}}>
+        <h2 style={{fontSize:18,fontWeight:700,marginBottom:16}}>새 과(부서) 추가</h2>
+        <p style={{fontSize:13,color:"#64748b",marginBottom:20}}>과(부서) 이름을 입력하세요</p>
+        <input value={newName} onChange={e=>setNewName(e.target.value)} placeholder="예: 행정위원회"
+          style={{width:"100%",padding:"12px 16px",border:"2px solid #e2e8f0",borderRadius:10,fontSize:15,fontWeight:600,fontFamily:"inherit",textAlign:"center",marginBottom:16}}
+          onKeyDown={e=>{if(e.key==="Enter"&&newName.trim()){
+            if(getAllPresetNames().includes(newName.trim())){alert("이미 존재하는 이름입니다.");return;}
+            setStep("categories");
+          }}}/>
+        <div style={{display:"flex",gap:10,justifyContent:"center"}}>
+          <button onClick={()=>setSetupMode(null)} style={{padding:"10px 20px",border:"1px solid #e2e8f0",borderRadius:8,background:"#fff",fontSize:13,fontWeight:600,fontFamily:"inherit",color:"#64748b"}}>취소</button>
+          <button onClick={()=>{
+            if(!newName.trim()){alert("이름을 입력하세요.");return;}
+            if(getAllPresetNames().includes(newName.trim())){alert("이미 존재하는 이름입니다.");return;}
+            setStep("categories");
+          }} style={{padding:"10px 20px",background:"#6366f1",color:"#fff",border:"none",borderRadius:8,fontSize:13,fontWeight:700,fontFamily:"inherit"}}>다음</button>
+        </div>
+      </div>
+    );
+
+    return (
+      <div>
+        <h2 style={{fontSize:18,fontWeight:700,marginBottom:4,textAlign:"center"}}>{newName}</h2>
+        <p style={{fontSize:12,color:"#94a3b8",marginBottom:16,textAlign:"center"}}>통계목(카테고리)을 추가하세요</p>
+
+        {/* Tab selector */}
+        <div style={{display:"flex",gap:0,borderRadius:8,overflow:"hidden",border:"1px solid #e2e8f0",marginBottom:14}}>
+          {["일반지출","일상경비"].map(t=>(
+            <button key={t} onClick={()=>setAddTab(t)} style={{flex:1,padding:"8px",border:"none",fontSize:13,fontWeight:addTab===t?700:500,fontFamily:"inherit",
+              background:addTab===t?(t==="일반지출"?"#3b82f6":"#10b981"):"#fff",color:addTab===t?"#fff":"#64748b"}}>
+              {t} ({(cats[t]||[]).length})
             </button>
           ))}
         </div>
-        <p style={{fontSize:11,color:"#cbd5e1",marginTop:24}}>선택 후 자동으로 기억됩니다</p>
+
+        {/* Category list */}
+        <div style={{marginBottom:14,maxHeight:220,overflowY:"auto"}}>
+          {(cats[addTab]||[]).map((c,i)=>(
+            <div key={i} style={{display:"flex",alignItems:"center",gap:8,padding:"6px 0",borderBottom:"1px solid #f1f5f9"}}>
+              <span style={{fontSize:12,fontWeight:600,flex:1}}>{c.name}</span>
+              <span style={{fontSize:11,color:"#64748b",fontFamily:"var(--mono)"}}>{fmt(c.budget)}원</span>
+              <button onClick={()=>removeCat(addTab,i)} style={{border:"none",background:"none",color:"#ef4444",fontSize:12,fontWeight:700,padding:"2px 6px"}}>✕</button>
+            </div>
+          ))}
+          {!(cats[addTab]||[]).length && <p style={{textAlign:"center",color:"#cbd5e1",padding:10,fontSize:12}}>카테고리가 없습니다</p>}
+        </div>
+
+        {/* Add form */}
+        <div style={{display:"flex",gap:6,marginBottom:16}}>
+          <input value={addForm.name} onChange={e=>setAddForm({...addForm,name:e.target.value})} placeholder="카테고리명"
+            style={{flex:1,padding:"8px 10px",border:"1.5px solid #e2e8f0",borderRadius:6,fontSize:12,fontFamily:"inherit"}}
+            onKeyDown={e=>{if(e.key==="Enter")addCat();}}/>
+          <input value={addForm.budget||""} onChange={e=>setAddForm({...addForm,budget:e.target.value})} placeholder="예산액"
+            style={{width:100,padding:"8px 10px",border:"1.5px solid #e2e8f0",borderRadius:6,fontSize:12,fontFamily:"inherit",textAlign:"right"}}
+            onKeyDown={e=>{if(e.key==="Enter")addCat();}}/>
+          <button onClick={addCat} style={{padding:"8px 14px",background:"#6366f1",color:"#fff",border:"none",borderRadius:6,fontSize:12,fontWeight:700,fontFamily:"inherit",whiteSpace:"nowrap"}}>추가</button>
+        </div>
+
+        <div style={{display:"flex",gap:10,justifyContent:"center"}}>
+          <button onClick={()=>setSetupMode(null)} style={{padding:"10px 20px",border:"1px solid #e2e8f0",borderRadius:8,background:"#fff",fontSize:13,fontWeight:600,fontFamily:"inherit",color:"#64748b"}}>취소</button>
+          <button onClick={finish} style={{padding:"10px 24px",background:"#6366f1",color:"#fff",border:"none",borderRadius:8,fontSize:13,fontWeight:700,fontFamily:"inherit"}}>
+            완료 및 시작
+          </button>
+        </div>
+      </div>
+    );
+  };
+
+  // Preset selection screen
+  if(!presetName) return (
+    <div style={{display:"flex",alignItems:"center",justifyContent:"center",minHeight:"100vh",background:"#f0f2f7",padding:20}}>
+      <div style={{background:"#fff",borderRadius:20,padding:"48px 40px",maxWidth:480,width:"100%",boxShadow:"0 8px 32px rgba(0,0,0,.08)"}}>
+        {setupMode === "create" ? <PresetCreator /> : (<div style={{textAlign:"center"}}>
+          <div style={{width:56,height:56,borderRadius:14,background:"linear-gradient(135deg,#6366f1,#10b981)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:28,fontWeight:900,color:"#fff",margin:"0 auto 20px"}}>₩</div>
+          <h1 style={{fontSize:22,fontWeight:800,marginBottom:6,letterSpacing:"-0.5px"}}>지출관리</h1>
+          <p style={{fontSize:13,color:"#94a3b8",marginBottom:28}}>사용할 과(부서)를 선택하세요</p>
+          <div style={{display:"flex",flexDirection:"column",gap:10}}>
+            {getAllPresetNames().map(name=>(
+              <button key={name} onClick={()=>selectPreset(name)}
+                style={{padding:"16px 20px",border:"2px solid #e2e8f0",borderRadius:12,background:"#fff",fontSize:15,fontWeight:600,
+                  fontFamily:"inherit",color:"#1e293b",cursor:"pointer",transition:"all .15s"}}
+                onMouseEnter={e=>{e.currentTarget.style.borderColor="#6366f1";e.currentTarget.style.background="#f5f3ff";}}
+                onMouseLeave={e=>{e.currentTarget.style.borderColor="#e2e8f0";e.currentTarget.style.background="#fff";}}>
+                {name}
+              </button>
+            ))}
+            <button onClick={()=>setSetupMode("create")}
+              style={{padding:"16px 20px",border:"2px dashed #cbd5e1",borderRadius:12,background:"#fafbfc",fontSize:15,fontWeight:600,
+                fontFamily:"inherit",color:"#94a3b8",cursor:"pointer",transition:"all .15s"}}
+              onMouseEnter={e=>{e.currentTarget.style.borderColor="#6366f1";e.currentTarget.style.color="#6366f1";}}
+              onMouseLeave={e=>{e.currentTarget.style.borderColor="#cbd5e1";e.currentTarget.style.color="#94a3b8";}}>
+              + 새 과(부서) 추가
+            </button>
+          </div>
+          <p style={{fontSize:11,color:"#cbd5e1",marginTop:24}}>선택 후 자동으로 기억됩니다</p>
+        </div>)}
       </div>
     </div>
   );
