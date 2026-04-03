@@ -257,6 +257,20 @@ function loadData(presetName) {
   try { const d = localStorage.getItem(getStorageKey(presetName)); return d ? JSON.parse(d) : {rows:[],budgets:{}}; }
   catch { return {rows:[],budgets:{}}; }
 }
+// budgets 마이그레이션: flat {catId:amt} → yearly {"2026":{catId:amt}}
+function migrateBudgets(budgets) {
+  if (!budgets || typeof budgets !== "object") return {};
+  const keys = Object.keys(budgets);
+  if (!keys.length) return {};
+  // 이미 연도별 구조인지 확인 (키가 4자리 숫자면 연도별)
+  if (keys.every(k => /^\d{4}$/.test(k))) return budgets;
+  // flat 구조 → 현재 연도로 마이그레이션
+  const year = String(new Date().getFullYear());
+  return { [year]: budgets };
+}
+function getYearBudgets(budgets, year) {
+  return budgets[year] || {};
+}
 function saveData(presetName, d) {
   try { localStorage.setItem(getStorageKey(presetName), JSON.stringify(d)); return true; }
   catch { return false; }
@@ -295,6 +309,7 @@ function App() {
   const [sortDesc, setSortDesc] = useState(true); // true=최신순(내림), false=오래된순(오름)
   const [customDocTmpls, setCustomDocTmpls] = useState({}); // 커스텀 공문 템플릿
   const [docEditCat, setDocEditCat] = useState(null); // 공문 편집 중인 카테고리 ID
+  const [budgetYear, setBudgetYear] = useState(() => String(new Date().getFullYear())); // 예산관리 연도
   const fRef = useRef(null);
 
   // Derive preset data
@@ -319,7 +334,9 @@ function App() {
     const defB = getDefaultBudgets(preset.categories);
     const d = loadData(name);
     setRows(d.rows||[]);
-    setBudgets({...defB,...(d.budgets||{})});
+    const mb = migrateBudgets(d.budgets||{});
+    const yr = String(new Date().getFullYear());
+    setBudgets({...mb, [yr]: {...defB, ...(mb[yr]||{})}});
     setCatNames(d.catNames||{});
     setCustomDocTmpls(d.customDocTmpls||{});
     setView("home");
@@ -335,9 +352,16 @@ function App() {
     setAllPresets(getAllPresets());
   };
 
-  const updateBudget = (catId, val) => {
-    const newB = {...budgets, [catId]: parseAmt(val)};
+  const updateBudget = (catId, val, year) => {
+    const yr = year || budgetYear;
+    const yrB = {...(budgets[yr]||{}), [catId]: parseAmt(val)};
+    const newB = {...budgets, [yr]: yrB};
     persist(undefined, newB);
+  };
+  // 특정 연도의 예산 가져오기
+  const getBudget = (catId, year) => {
+    const yr = year || budgetYear;
+    return (budgets[yr]||{})[catId] || 0;
   };
 
   // Generate document text
@@ -534,7 +558,9 @@ function App() {
     if (!presetName) { setLoading(false); return; }
     const d = loadData(presetName);
     setRows(d.rows||[]);
-    setBudgets({...DEFAULT_BUDGETS,...(d.budgets||{})});
+    const mb = migrateBudgets(d.budgets||{});
+    const yr = String(new Date().getFullYear());
+    setBudgets({...mb, [yr]: {...DEFAULT_BUDGETS, ...(mb[yr]||{})}});
     setCatNames(d.catNames||{});
     setCustomDocTmpls(d.customDocTmpls||{});
     setLoading(false);
@@ -584,7 +610,8 @@ function App() {
     saveCustomPresets(custom);
     setAllPresets(getAllPresets());
     // 예산 업데이트
-    const newB = {...budgets, [newId]: parseAmt(budget)};
+    const yrB = {...(budgets[budgetYear]||{}), [newId]: parseAmt(budget)};
+    const newB = {...budgets, [budgetYear]: yrB};
     persist(undefined, newB);
     notify(`${catName} 카테고리 추가 완료`);
   };
@@ -1170,7 +1197,7 @@ function App() {
                 </div>
               {ALL_CATS.map(cat=>{
                 const cr=yearRows.filter(r=>r.catId===cat.id);
-                const bg=budgets[cat.id]||0;
+                const bg=getBudget(cat.id, dashYear==="all"?budgetYear:dashYear);
                 if(!cr.length && !bg) return null;
                 const spent=cr.reduce((s,r)=>s+r.amount,0);
                 const pct=bg>0?Math.min((spent/bg)*100,100):0;
@@ -1443,7 +1470,7 @@ function App() {
                       </div>
                       {/* Budget bar */}
                       {(()=>{
-                        const bg = budgets[cat.id] || 0;
+                        const bg = getBudget(cat.id, budgetYear);
                         const remain = bg - catTotal;
                         const pct = bg > 0 ? Math.min((catTotal / bg) * 100, 100) : 0;
                         const over = catTotal > bg && bg > 0;
@@ -1663,11 +1690,32 @@ function App() {
 
         {/* BUDGET MANAGEMENT */}
         {view==="budget"&&<div style={{animation:"fadeUp var(--transition-slow) ease"}}>
+          {/* 연도 선택 */}
+          <div style={{display:"flex",gap:8,marginBottom:16,alignItems:"center"}}>
+            <span style={{fontSize:12,fontWeight:600,color:"var(--gray-500)"}}>연도</span>
+            <div style={{display:"flex",gap:0,borderRadius:"var(--radius-sm)",overflow:"hidden",border:"1px solid var(--gray-200)",boxShadow:"var(--shadow-sm)"}}>
+              {(()=>{
+                const yr = parseInt(budgetYear);
+                return [yr-1,yr,yr+1].map(y=>(
+                  <button key={y} onClick={()=>setBudgetYear(String(y))} style={{padding:"6px 16px",border:"none",fontSize:12,fontWeight:budgetYear===String(y)?700:500,fontFamily:"inherit",
+                    background:budgetYear===String(y)?"var(--gray-900)":"#fff",color:budgetYear===String(y)?"#fff":"var(--gray-500)",transition:"all var(--transition-fast)"}}>{y}년</button>
+                ));
+              })()}
+            </div>
+            <button onClick={()=>{
+              const prev = String(parseInt(budgetYear)-1);
+              if(budgets[prev] && confirm(`${prev}년 예산을 ${budgetYear}년으로 복사하시겠습니까?`)){
+                const newB = {...budgets, [budgetYear]: {...budgets[prev], ...(budgets[budgetYear]||{})}};
+                persist(undefined, newB);
+                notify(`${prev}년 예산 복사 완료`);
+              } else if(!budgets[prev]) { notify("이전 연도 예산이 없습니다","err"); }
+            }} style={{...S.sec2,fontSize:11,padding:"5px 12px"}}>← 전년도 예산 복사</button>
+          </div>
           {["일반지출","일상경비"].map(tabName=>{
             const cats = CATEGORIES[tabName]||[];
             const isG = tabName==="일반지출";
             const accent = isG ? "#3b82f6" : "#10b981";
-            const tabTotal = cats.reduce((s,c)=>s+(budgets[c.id]||0),0);
+            const tabTotal = cats.reduce((s,c)=>s+getBudget(c.id,budgetYear),0);
             const tabSpent = cats.reduce((s,c)=>s+rows.filter(r=>r.catId===c.id).reduce((ss,r)=>ss+r.amount,0),0);
             return <div key={tabName} style={{marginBottom:24}}>
               <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
@@ -1693,7 +1741,7 @@ function App() {
                   </tr></thead>
                   <tbody>
                     {cats.map((c,idx)=>{
-                      const bg=budgets[c.id]||0;
+                      const bg=getBudget(c.id,budgetYear);
                       const spent=rows.filter(r=>r.catId===c.id).reduce((s,r)=>s+r.amount,0);
                       const remain=bg-spent;
                       const pct=bg>0?Math.min((spent/bg)*100,100):0;
@@ -1791,7 +1839,10 @@ function App() {
           </div>
 
           <div style={{display:"flex",gap:10,justifyContent:"flex-end"}}>
-            <button style={S.sec2} onClick={()=>{if(confirm("예산을 프리셋 기본값으로 초기화하시겠습니까?")){persist(undefined,{...DEFAULT_BUDGETS});}}} >예산 초기화</button>
+            <button style={S.sec2} onClick={()=>{if(confirm(`${budgetYear}년 예산을 프리셋 기본값으로 초기화하시겠습니까?`)){
+              const newB = {...budgets, [budgetYear]: {...DEFAULT_BUDGETS}};
+              persist(undefined, newB);
+            }}} >{budgetYear}년 예산 초기화</button>
           </div>
         </div>}
 
