@@ -404,6 +404,7 @@ function App() {
     savePresetChoice(name);
     setPresetName(name);
     const preset = ap[name];
+    if (!preset) { setLoading(false); return; }
     const defB = getDefaultBudgets(preset.categories);
     const d = loadData(name);
     setRows(d.rows||[]);
@@ -922,10 +923,6 @@ function App() {
     notify("정보공개 엑셀 다운로드 완료!");
   };
 
-  if(loading) return React.createElement("div",{style:{display:"flex",alignItems:"center",justifyContent:"center",height:"100vh",flexDirection:"column",gap:16}},
-    React.createElement("div",{style:{width:48,height:48,borderRadius:14,background:"linear-gradient(135deg,#6366f1,#10b981)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:22,fontWeight:900,color:"#fff",animation:"pulse 1.5s infinite"}}, "₩"),
-    React.createElement("p",{style:{color:"var(--gray-400)",fontSize:14,fontWeight:500}},"불러오는 중..."));
-
   // Preset creation form component
   const PresetCreator = () => {
     const [newName, setNewName] = useState("");
@@ -1093,38 +1090,51 @@ function App() {
     );
   };
 
+  if(loading) return React.createElement("div",{style:{display:"flex",alignItems:"center",justifyContent:"center",height:"100vh",flexDirection:"column",gap:16}},
+    React.createElement("div",{style:{width:48,height:48,borderRadius:14,background:"linear-gradient(135deg,#6366f1,#10b981)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:22,fontWeight:900,color:"#fff",animation:"pulse 1.5s infinite"}}, "₩"),
+    React.createElement("p",{style:{color:"var(--gray-400)",fontSize:14,fontWeight:500}},"불러오는 중..."));
+
   const handlePresetLogin = async (name) => {
-    const dept = await dbGetDepartment(name);
-    if (!dept) {
-      // DB에 없으면 비밀번호 설정 없이 바로 진입 (첫 사용)
-      await dbRegisterDepartment(name, "0000");
-      selectPreset(name);
-      return;
+    try {
+      const dept = await dbGetDepartment(name);
+      if (!dept) {
+        await dbRegisterDepartment(name, "0000");
+        selectPreset(name);
+        return;
+      }
+      if (dept.password === "0000") {
+        selectPreset(name);
+        return;
+      }
+      setLoginTarget(name);
+      setLoginPw("");
+      setLoginError("");
+    } catch(e) {
+      console.error("로그인 처리 오류:", e);
+      selectPreset(name); // DB 오류 시 바로 진입
     }
-    if (dept.password === "0000") {
-      // 기본 비밀번호면 바로 진입
-      selectPreset(name);
-      return;
-    }
-    // 비밀번호 설정된 과 → 입력 요구
-    setLoginTarget(name);
-    setLoginPw("");
-    setLoginError("");
   };
 
   const confirmLogin = async () => {
-    const dept = await dbGetDepartment(loginTarget);
-    if (dept && dept.password === loginPw) {
-      setLoginTarget(null);
-      selectPreset(loginTarget);
-    } else {
-      setLoginError("비밀번호가 틀렸습니다");
+    try {
+      const dept = await dbGetDepartment(loginTarget);
+      if (dept && dept.password === loginPw) {
+        const target = loginTarget;
+        setLoginTarget(null);
+        selectPreset(target);
+      } else {
+        setLoginError("비밀번호가 틀렸습니다");
+      }
+    } catch(e) {
+      console.error("로그인 확인 오류:", e);
+      setLoginError("네트워크 오류. 다시 시도하세요.");
     }
   };
 
   const enterAdminMode = async () => {
     const pw = prompt("관리자 비밀번호를 입력하세요:");
     if (pw !== ADMIN_PASSWORD) { alert("비밀번호가 틀렸습니다"); return; }
+    if (!supabase) { alert("DB 연결이 필요합니다. 인터넷 연결을 확인하세요."); return; }
     const data = await dbLoadAllDepartments();
     setAdminData(data);
     setAdminMode(true);
