@@ -1819,14 +1819,18 @@ function App() {
                           const selRows_ = catRows.filter(r=>selIds.has(r.id));
                           const allDoc = selRows_.length>0 && selRows_.every(r=>(r.extra?.["진행상태"]||"").includes("공문"));
                           const allAppr = selRows_.length>0 && selRows_.every(r=>(r.extra?.["진행상태"]||"").includes("결재"));
-                          const batchStatus = (key) => {
+                          const batchStatus = (key, allDone) => {
                             const updated = rows.map(r => {
                               if (!selIds.has(r.id)) return r;
                               const st = r.extra?.["진행상태"] || "";
-                              const has = st.includes(key);
                               let next;
-                              if (has) next = st.replace(key,"").replace(/,+/g,",").replace(/^,|,$/g,"");
-                              else next = st ? st+","+key : key;
+                              if (allDone) {
+                                // 전부 체크됨 → 일괄 해제
+                                next = st.replace(key,"").replace(/,+/g,",").replace(/^,|,$/g,"");
+                              } else {
+                                // 하나라도 미체크 → 일괄 체크
+                                next = st.includes(key) ? st : (st ? st+","+key : key);
+                              }
                               return {...r, extra:{...r.extra, "진행상태": next}};
                             });
                             persist(updated);
@@ -1844,12 +1848,12 @@ function App() {
                             </button>}
                             {selCount>=1 && <>
                               {DOC_TEMPLATES[cat.id] && <span style={{color:"var(--gray-300)",fontSize:12}}>│</span>}
-                              <button onClick={()=>batchStatus("공문")}
+                              <button onClick={()=>batchStatus("공문", allDoc)}
                                 style={{padding:"3px 10px",borderRadius:4,fontSize:10,fontWeight:700,border:"1px solid",cursor:"pointer",fontFamily:"inherit",transition:"all .1s",
                                   background:allDoc?"#f0fdf4":"#fff",color:allDoc?"#16a34a":"#64748b",borderColor:allDoc?"#86efac":"#d1d5db"}}>
                                 {allDoc?"✓ ":""}공문 ({selCount})
                               </button>
-                              <button onClick={()=>batchStatus("결재")}
+                              <button onClick={()=>batchStatus("결재", allAppr)}
                                 style={{padding:"3px 10px",borderRadius:4,fontSize:10,fontWeight:700,border:"1px solid",cursor:"pointer",fontFamily:"inherit",transition:"all .1s",
                                   background:allAppr?"#f0fdf4":"#fff",color:allAppr?"#16a34a":"#64748b",borderColor:allAppr?"#86efac":"#d1d5db"}}>
                                 {allAppr?"✓ ":""}e호조 ({selCount})
