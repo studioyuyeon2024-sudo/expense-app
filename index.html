@@ -524,8 +524,6 @@ function App() {
     if (intro.includes("{meal}")) intro = intro.replace("{meal}", mealKr);
 
     let lines = [];
-    lines.push(`제목  ${title}`);
-    lines.push("");
     lines.push(`  ${intro}`);
     lines.push("");
     lines.push(`  1. ${titleObj.amtLabel} : 금${fmt(row.amount)}원(금${amtKr}원)`);
