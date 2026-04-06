@@ -162,7 +162,66 @@ const PRESETS = {
     },
     docTemplates: null, // set below
   },
-  // 새 과 추가 시 여기에 프리셋 추가
+  "기획행정위원회": {
+    categories: {
+      "일반지출": [
+        {id:"g1",name:"의회운영업무추진비",budget:0,fields:["월","일자","금액","장소","인원","사용내역"],dateField:"일자",amountField:"금액",placeField:"장소"},
+        {id:"g2",name:"의정운영공통경비",budget:0,fields:["월","일자","금액","장소","인원","사용내역"],dateField:"일자",amountField:"금액",placeField:"장소"},
+      ],
+      "일상경비": [
+        {id:"d1",name:"시책추진업무추진비",budget:0,fields:["월","사용일자","금액","장소","사용내역"],dateField:"사용일자",amountField:"금액",placeField:"장소"},
+        {id:"d2",name:"부서운영업무추진비",budget:0,fields:["월","사용일자","금액","장소","사용내역"],dateField:"사용일자",amountField:"금액",placeField:"장소"},
+        {id:"d3",name:"사무관리비",budget:0,fields:["월","채주(일자)","금액","장소","사용내역"],dateField:"채주(일자)",amountField:"금액",placeField:"장소"},
+        {id:"d4",name:"국내여비",budget:0,fields:["월","채주(일자)","금액","장소","사용내역"],dateField:"채주(일자)",amountField:"금액",placeField:"장소"},
+      ],
+    },
+    docTemplates: {},
+  },
+  "농업복지환경위원회": {
+    categories: {
+      "일반지출": [
+        {id:"g1",name:"의회운영업무추진비",budget:0,fields:["월","일자","금액","장소","인원","사용내역"],dateField:"일자",amountField:"금액",placeField:"장소"},
+        {id:"g2",name:"의정운영공통경비",budget:0,fields:["월","일자","금액","장소","인원","사용내역"],dateField:"일자",amountField:"금액",placeField:"장소"},
+      ],
+      "일상경비": [
+        {id:"d1",name:"시책추진업무추진비",budget:0,fields:["월","사용일자","금액","장소","사용내역"],dateField:"사용일자",amountField:"금액",placeField:"장소"},
+        {id:"d2",name:"부서운영업무추진비",budget:0,fields:["월","사용일자","금액","장소","사용내역"],dateField:"사용일자",amountField:"금액",placeField:"장소"},
+        {id:"d3",name:"사무관리비",budget:0,fields:["월","채주(일자)","금액","장소","사용내역"],dateField:"채주(일자)",amountField:"금액",placeField:"장소"},
+        {id:"d4",name:"국내여비",budget:0,fields:["월","채주(일자)","금액","장소","사용내역"],dateField:"채주(일자)",amountField:"금액",placeField:"장소"},
+      ],
+    },
+    docTemplates: {},
+  },
+  "경제산업건설위원회": {
+    categories: {
+      "일반지출": [
+        {id:"g1",name:"의회운영업무추진비",budget:0,fields:["월","일자","금액","장소","인원","사용내역"],dateField:"일자",amountField:"금액",placeField:"장소"},
+        {id:"g2",name:"의정운영공통경비",budget:0,fields:["월","일자","금액","장소","인원","사용내역"],dateField:"일자",amountField:"금액",placeField:"장소"},
+      ],
+      "일상경비": [
+        {id:"d1",name:"시책추진업무추진비",budget:0,fields:["월","사용일자","금액","장소","사용내역"],dateField:"사용일자",amountField:"금액",placeField:"장소"},
+        {id:"d2",name:"부서운영업무추진비",budget:0,fields:["월","사용일자","금액","장소","사용내역"],dateField:"사용일자",amountField:"금액",placeField:"장소"},
+        {id:"d3",name:"사무관리비",budget:0,fields:["월","채주(일자)","금액","장소","사용내역"],dateField:"채주(일자)",amountField:"금액",placeField:"장소"},
+        {id:"d4",name:"국내여비",budget:0,fields:["월","채주(일자)","금액","장소","사용내역"],dateField:"채주(일자)",amountField:"금액",placeField:"장소"},
+      ],
+    },
+    docTemplates: {},
+  },
+  "문화안전소방위원회": {
+    categories: {
+      "일반지출": [
+        {id:"g1",name:"의회운영업무추진비",budget:0,fields:["월","일자","금액","장소","인원","사용내역"],dateField:"일자",amountField:"금액",placeField:"장소"},
+        {id:"g2",name:"의정운영공통경비",budget:0,fields:["월","일자","금액","장소","인원","사용내역"],dateField:"일자",amountField:"금액",placeField:"장소"},
+      ],
+      "일상경비": [
+        {id:"d1",name:"시책추진업무추진비",budget:0,fields:["월","사용일자","금액","장소","사용내역"],dateField:"사용일자",amountField:"금액",placeField:"장소"},
+        {id:"d2",name:"부서운영업무추진비",budget:0,fields:["월","사용일자","금액","장소","사용내역"],dateField:"사용일자",amountField:"금액",placeField:"장소"},
+        {id:"d3",name:"사무관리비",budget:0,fields:["월","채주(일자)","금액","장소","사용내역"],dateField:"채주(일자)",amountField:"금액",placeField:"장소"},
+        {id:"d4",name:"국내여비",budget:0,fields:["월","채주(일자)","금액","장소","사용내역"],dateField:"채주(일자)",amountField:"금액",placeField:"장소"},
+      ],
+    },
+    docTemplates: {},
+  },
 };
 
 const PRESET_NAMES = Object.keys(PRESETS);
