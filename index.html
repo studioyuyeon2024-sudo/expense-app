@@ -2015,7 +2015,16 @@ function App() {
                                   if(!row.extra?.["사용목적"]) missing.push("사용목적");
                                   return <>
                                     {missing.length>0 && <span title={`미입력: ${missing.join(", ")}`} style={{color:"#f59e0b",fontSize:12,cursor:"help",marginRight:2}}>⚠</span>}
-                                    <button onClick={()=>openDocModal(row)} style={{...S.tiny,color:"#6366f1",fontSize:14}} title="공문 생성">📄</button>
+                                    <button onClick={()=>{
+                                      // 묶인 건이면 그룹 전체로 공문 생성
+                                      const purpose = row.extra?.["사용목적"];
+                                      if(purpose && groupMap[purpose] && groupMap[purpose].length>=2) {
+                                        const grpRows = catRows.filter(r=>groupMap[purpose].includes(r.id));
+                                        openDocModalMulti(grpRows, cat.id);
+                                      } else {
+                                        openDocModal(row);
+                                      }
+                                    }} style={{...S.tiny,color:"#6366f1",fontSize:14}} title="공문 생성">📄</button>
                                   </>;
                                 })()}
                               </td>
