@@ -1929,9 +1929,9 @@ function App() {
                             const w = isMon?"36px":isAmt?"90px":isDate?"135px":isPlace?"110px":isDetail?"auto":isEtc?"70px":"80px";
                             return <col key={fi} style={{width:w}}/>;
                           })}
-                          <col style={{width:50}}/>
-                          <col style={{width:110}}/>
-                          <col style={{width:32}}/>
+                          <col style={{width:44}}/>
+                          <col style={{width:120}}/>
+                          <col style={{width:30}}/>
                         </colgroup>
                         <thead>
                           <tr>
@@ -1943,9 +1943,9 @@ function App() {
                             {cat.fields.map((f,fi)=>(
                               <th key={fi} style={{...S.pvTh,...(f==="금액"||f==="지출"||f===cat.amountField?{textAlign:"right"}:{})}}>{f}</th>
                             ))}
-                            <th style={{...S.pvTh,width:50}}/>
-                            <th style={{...S.pvTh,width:110,textAlign:"center"}}>진행상태</th>
-                            <th style={{...S.pvTh,width:32}}/>
+                            <th style={{...S.pvTh,width:44}}/>
+                            <th style={{...S.pvTh,width:120,textAlign:"center"}}>진행상태</th>
+                            <th style={{...S.pvTh,width:30}}/>
                           </tr>
                         </thead>
                         <tbody>
