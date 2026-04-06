@@ -2863,11 +2863,12 @@ function App() {
                   <div style={{marginBottom:12}}>
                     <label style={{fontSize:11,fontWeight:700,color:"var(--gray-500)",marginBottom:4,display:"block"}}>사용목적 (사용내역에 저장됨)</label>
                     <input value={docModal.docTitle||""} onChange={e=>{
-                      const newTitle = e.target.value;
-                      setDocModal({...docModal, docTitle: newTitle});
-                      saveDocPurpose(newTitle, docModal);
+                      setDocModal({...docModal, docTitle: e.target.value});
+                    }} onBlur={e=>{
+                      if(e.target.value) saveDocPurpose(e.target.value, docModal);
                     }} placeholder="사용목적을 입력하세요"
                       style={{width:"100%",padding:"10px 14px",border:"2px solid var(--primary)",borderRadius:8,fontSize:14,fontWeight:600,fontFamily:"inherit",color:"var(--gray-800)",background:"var(--primary-bg)"}}/>
+                    <div style={{fontSize:10,color:"var(--gray-400)",marginTop:3}}>입력 후 다른 곳을 클릭하면 저장됩니다</div>
                   </div>
                   <textarea value={docModal.docText} onChange={e=>setDocModal({...docModal,docText:e.target.value})}
                     style={{width:"100%",minHeight:280,padding:"16px 18px",border:"1px solid #e2e8f0",borderRadius:10,fontSize:14,lineHeight:1.8,
