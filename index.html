@@ -2072,14 +2072,22 @@ function App() {
                                 {(()=>{
                                   const st = row.extra?.["진행상태"] || "";
                                   const steps = [{key:"공문",label:"공문"},{key:"결재",label:"e호조"}];
+                                  // 묶인 건이면 그룹 전체 ID
+                                  const purpose = row.extra?.["사용목적"]||"";
+                                  const grpIds = (purpose && groupMap[purpose] && groupMap[purpose].length>=2) ? new Set(groupMap[purpose]) : new Set([row.id]);
                                   return <div style={{display:"flex",gap:4,justifyContent:"center"}}>
                                     {steps.map(s=>{
                                       const done = st.includes(s.key);
                                       return <button key={s.key} onClick={()=>{
-                                        let next;
-                                        if(done) next = st.replace(s.key,"").replace(/,+/g,",").replace(/^,|,$/g,"");
-                                        else next = st ? st+","+s.key : s.key;
-                                        persist(rows.map(r=>r.id===row.id?{...r,extra:{...r.extra,"진행상태":next}}:r));
+                                        persist(rows.map(r=>{
+                                          if(!grpIds.has(r.id)) return r;
+                                          const rst = r.extra?.["진행상태"] || "";
+                                          const has = rst.includes(s.key);
+                                          let next;
+                                          if(done) next = rst.replace(s.key,"").replace(/,+/g,",").replace(/^,|,$/g,"");
+                                          else next = rst ? (has ? rst : rst+","+s.key) : s.key;
+                                          return {...r, extra:{...r.extra, "진행상태": next}};
+                                        }));
                                       }} style={{padding:"2px 8px",borderRadius:4,fontSize:10,fontWeight:700,border:"1px solid",cursor:"pointer",fontFamily:"inherit",transition:"all .1s",
                                         background:done?"#f0fdf4":"#fff",color:done?"#16a34a":"#94a3b8",borderColor:done?"#86efac":"#e2e8f0"
                                       }}>{done?"✓ ":""}{s.label}</button>;
