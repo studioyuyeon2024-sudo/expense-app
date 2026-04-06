@@ -2012,7 +2012,7 @@ function App() {
                                 {DOC_TEMPLATES[cat.id] && (()=>{
                                   const missing = [];
                                   if(!row.extra?.["인원"]) missing.push("인원");
-                                  if(!row.extra?.["사용목적"]) missing.push("사용목적");
+                                  if(!row.extra?.["사용목적"] && !row.extra?.["사용내역"]) missing.push("사용목적");
                                   return <>
                                     {missing.length>0 && <span title={`미입력: ${missing.join(", ")}`} style={{color:"#f59e0b",fontSize:12,cursor:"help",marginRight:2}}>⚠</span>}
                                     <button onClick={()=>{
