@@ -1983,7 +1983,7 @@ function App() {
                             const isGroupLast = isBundled && groupIds[groupIds.length-1]===row.id;
                             const isDone = (row.extra?.["진행상태"]||"").includes("공문") && (row.extra?.["진행상태"]||"").includes("결재");
 
-                            const rowEl = <tr key={row.id} style={{
+                            const rowEl = (<tr key={row.id} style={{
                               borderBottom:isGroupLast?`2px solid ${bColor}33`:isBundled?"1px dashed "+bColor+"44":"1px solid #f0f1f3",
                               ...(isGroupFirst?{borderTop:`2px solid ${bColor}33`}:{}),
                               background:docSelected.has(row.id)?"#eef2ff":isDone?"#fefce8":isBundled?(bColor+"08"):(idx%2===0?"#fff":"#fafafc"),
