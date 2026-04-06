@@ -1959,15 +1959,16 @@ function App() {
                             const groupIds = groupMap[purpose]||[];
                             const isGroupFirst = isBundled && groupIds[0]===row.id;
                             const isGroupLast = isBundled && groupIds[groupIds.length-1]===row.id;
+                            const isDone = (row.extra?.["진행상태"]||"").includes("공문") && (row.extra?.["진행상태"]||"").includes("결재");
 
                             return <tr key={row.id} style={{
                               borderBottom:isGroupLast?`2px solid ${bColor}33`:isBundled?"1px dashed "+bColor+"44":"1px solid #f0f1f3",
                               ...(isGroupFirst?{borderTop:`2px solid ${bColor}33`}:{}),
-                              background:docSelected.has(row.id)?"#eef2ff":isBundled?(bColor+"08"):(idx%2===0?"#fff":"#fafafc"),
+                              background:docSelected.has(row.id)?"#eef2ff":isDone?"#f0fdf8":isBundled?(bColor+"08"):(idx%2===0?"#fff":"#fafafc"),
                               transition:"background .1s"
                             }}
-                              onMouseEnter={e=>{if(!docSelected.has(row.id))e.currentTarget.style.background=isBundled?(bColor+"14"):"#f5f6ff";}}
-                              onMouseLeave={e=>{if(!docSelected.has(row.id))e.currentTarget.style.background=isBundled?(bColor+"08"):(idx%2===0?"#fff":"#fafafc");}}>
+                              onMouseEnter={e=>{if(!docSelected.has(row.id))e.currentTarget.style.background=isDone?"#e6f7f0":isBundled?(bColor+"14"):"#f5f6ff";}}
+                              onMouseLeave={e=>{if(!docSelected.has(row.id))e.currentTarget.style.background=isDone?"#f0fdf8":isBundled?(bColor+"08"):(idx%2===0?"#fff":"#fafafc");}}>
                               <td style={{...S.pvTd,textAlign:"center",
                                 borderLeft:isBundled?`3px solid ${bColor}`:"3px solid transparent"}}>
                                 <input type="checkbox" checked={docSelected.has(row.id)} onChange={()=>{const ns=new Set(docSelected);ns.has(row.id)?ns.delete(row.id):ns.add(row.id);setDocSelected(ns);}}/>
