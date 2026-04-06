@@ -1965,10 +1965,11 @@ function App() {
                                 const monthRows = catRows.filter((_,i)=>rowsWithMonth[i].month===lastMonth);
                                 const monthTotal = monthRows.reduce((s,r)=>s+r.amount,0);
                                 result.push(<tr key={"sub-"+lastMonth} style={{background:"#fafafa",borderBottom:"2px solid var(--gray-200)"}}>
-                                  <td colSpan={3} style={{...S.pvTd,fontSize:11,fontWeight:700,color:accent,textAlign:"center"}}>{lastMonth}월 소계</td>
+                                  <td style={S.pvTd}/>
+                                  <td style={{...S.pvTd,textAlign:"center",fontSize:11,fontWeight:700,color:accent}}>{lastMonth}월</td>
                                   {cat.fields.map((f,fi)=>{
                                     const isAmt=f==="금액"||f==="지출"||f===cat.amountField;
-                                    return <td key={fi} style={{...S.pvTd,...(isAmt?{textAlign:"right",fontWeight:800,fontSize:12,color:accent}:{})}}>{isAmt?fmt(monthTotal)+"원":""}</td>;
+                                    return <td key={fi} style={{...S.pvTd,...(isAmt?{textAlign:"right",fontWeight:800,fontSize:12,color:accent}:{fontSize:11,color:"var(--gray-400)"})}}>{isAmt?fmt(monthTotal)+"원":fi===0?"소계":""}</td>;
                                   })}
                                   <td style={S.pvTd}/><td style={S.pvTd}/><td style={S.pvTd}/>
                                 </tr>);
@@ -2085,11 +2086,12 @@ function App() {
                               // 여러 월이 있을 때만 마지막 소계 표시
                               const months = [...new Set(rowsWithMonth.map(r=>r.month))];
                               if(months.length > 1) {
-                                result.push(<tr key={"sub-"+lastMonth} style={{background:"#fafafa",borderBottom:"2px solid var(--gray-200)"}}>
-                                  <td colSpan={3} style={{...S.pvTd,fontSize:11,fontWeight:700,color:accent,textAlign:"center"}}>{lastMonth}월 소계</td>
+                                result.push(<tr key={"sub-last-"+lastMonth} style={{background:"#fafafa",borderBottom:"2px solid var(--gray-200)"}}>
+                                  <td style={S.pvTd}/>
+                                  <td style={{...S.pvTd,textAlign:"center",fontSize:11,fontWeight:700,color:accent}}>{lastMonth}월</td>
                                   {cat.fields.map((f,fi)=>{
                                     const isAmt=f==="금액"||f==="지출"||f===cat.amountField;
-                                    return <td key={fi} style={{...S.pvTd,...(isAmt?{textAlign:"right",fontWeight:800,fontSize:12,color:accent}:{})}}>{isAmt?fmt(monthTotal)+"원":""}</td>;
+                                    return <td key={fi} style={{...S.pvTd,...(isAmt?{textAlign:"right",fontWeight:800,fontSize:12,color:accent}:{fontSize:11,color:"var(--gray-400)"})}}>{isAmt?fmt(monthTotal)+"원":fi===0?"소계":""}</td>;
                                   })}
                                   <td style={S.pvTd}/><td style={S.pvTd}/><td style={S.pvTd}/>
                                 </tr>);
