@@ -13,7 +13,6 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.9/babel.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.4/dist/umd/supabase.min.js"></script>
 <style>
   :root{
     --mono:'JetBrains Mono',monospace;
@@ -65,58 +64,64 @@ const {useState, useCallback, useRef, useEffect, useMemo} = React;
 const SUPABASE_URL = "https://jupyeldwarunpepudhpy.supabase.co";
 const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp1cHllbGR3YXJ1bnBlcHVkaHB5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUxOTk0NDIsImV4cCI6MjA5MDc3NTQ0Mn0.Nd5RXuRwju0GHlzFPWcEumlV8M835FqaxmUBDiRpgfg";
 let supabase = null;
-try {
-  const sb = window.supabase || window.Supabase;
-  if (sb && sb.createClient) supabase = sb.createClient(SUPABASE_URL, SUPABASE_KEY);
-  else console.warn("Supabase 라이브러리 로드 안됨 - localStorage만 사용");
-} catch(e) { console.error("Supabase 초기화 실패:", e); }
+// Supabase를 REST API로 직접 호출 (CDN 의존성 제거)
+const sbFetch = async (path, method, body) => {
+  try {
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
+      method, headers: {
+        "apikey": SUPABASE_KEY, "Authorization": `Bearer ${SUPABASE_KEY}`,
+        "Content-Type": "application/json", "Prefer": method==="POST"||method==="PUT"?"return=representation,resolution=merge-duplicates":"return=representation"
+      }, ...(body ? {body: JSON.stringify(body)} : {})
+    });
+    if (!res.ok) { console.error("Supabase API 오류:", res.status); return null; }
+    const text = await res.text();
+    return text ? JSON.parse(text) : null;
+  } catch(e) { console.error("Supabase 연결 오류:", e); return null; }
+};
+// supabase 연결 테스트 (REST API 사용 가능 여부)
+let supabaseReady = false;
+(async()=>{
+  try {
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/departments?select=name&limit=1`, {
+      headers: {"apikey": SUPABASE_KEY, "Authorization": `Bearer ${SUPABASE_KEY}`}
+    });
+    supabaseReady = res.ok;
+    if(supabaseReady) console.log("Supabase 연결 성공");
+    else console.warn("Supabase 연결 실패 - localStorage만 사용");
+  } catch { console.warn("Supabase 연결 불가 - localStorage만 사용"); }
+})();
 
 // Supabase DB 함수들
 const ADMIN_PASSWORD = "admin0922";
 let _syncTimer = null;
 
 async function dbSaveData(department, data) {
-  if (!supabase) return;
-  try {
-    const { error } = await supabase.from("expense_data").upsert({
-      department, data, updated_at: new Date().toISOString()
-    }, { onConflict: "department" });
-    if (error) console.error("DB 저장 오류:", error);
-  } catch (e) { console.error("DB 연결 오류:", e); }
+  if (!supabaseReady) return;
+  await sbFetch("expense_data", "POST", {department, data, updated_at: new Date().toISOString()});
 }
 
 async function dbLoadData(department) {
-  if (!supabase) return null;
-  try {
-    const { data, error } = await supabase.from("expense_data").select("data").eq("department", department).single();
-    if (error || !data) return null;
-    return data.data;
-  } catch { return null; }
+  if (!supabaseReady) return null;
+  const res = await sbFetch(`expense_data?department=eq.${encodeURIComponent(department)}&select=data`, "GET");
+  return (res && res.length > 0) ? res[0].data : null;
 }
 
 async function dbLoadAllDepartments() {
-  if (!supabase) return [];
-  try {
-    const { data, error } = await supabase.from("expense_data").select("department, data, updated_at").order("department");
-    if (error) return [];
-    return data || [];
-  } catch { return []; }
+  if (!supabaseReady) return [];
+  const res = await sbFetch("expense_data?select=department,data,updated_at&order=department", "GET");
+  return res || [];
 }
 
 async function dbGetDepartment(name) {
-  if (!supabase) return null;
-  try {
-    const { data } = await supabase.from("departments").select("*").eq("name", name).single();
-    return data;
-  } catch { return null; }
+  if (!supabaseReady) return null;
+  const res = await sbFetch(`departments?name=eq.${encodeURIComponent(name)}&select=*`, "GET");
+  return (res && res.length > 0) ? res[0] : null;
 }
 
 async function dbRegisterDepartment(name, password) {
-  if (!supabase) return false;
-  try {
-    const { error } = await supabase.from("departments").upsert({ name, password }, { onConflict: "name" });
-    return !error;
-  } catch { return false; }
+  if (!supabaseReady) return false;
+  const res = await sbFetch("departments", "POST", {name, password});
+  return !!res;
 }
 
 // 디바운스 동기화 (persist 후 1초 대기 후 DB 저장)
@@ -1134,7 +1139,7 @@ function App() {
   const enterAdminMode = async () => {
     const pw = prompt("관리자 비밀번호를 입력하세요:");
     if (pw !== ADMIN_PASSWORD) { alert("비밀번호가 틀렸습니다"); return; }
-    if (!supabase) { alert("DB 연결이 필요합니다. 인터넷 연결을 확인하세요."); return; }
+    if (!supabaseReady) { alert("DB 연결이 필요합니다. 인터넷 연결을 확인하세요."); return; }
     const data = await dbLoadAllDepartments();
     setAdminData(data);
     setAdminMode(true);
