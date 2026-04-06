@@ -1705,11 +1705,14 @@ function App() {
 
         {/* PREVIEW */}
         {view==="preview"&&(()=>{
+          const isAll = previewTab==="통합";
           const isG = previewTab==="일반지출";
-          const accent = isG ? "#3b82f6" : "#10b981";
-          const lightBg = isG ? "#eff6ff" : "#ecfdf5";
-          const tabRows = rows.filter(r=>r.tab===previewTab && (previewMonth==="all" || r.date?.split("-")?.[1]===previewMonth));
-          const tabCats = CATEGORIES[previewTab];
+          const accent = isAll ? "var(--primary)" : isG ? "#3b82f6" : "#10b981";
+          const lightBg = isAll ? "var(--primary-bg)" : isG ? "#eff6ff" : "#ecfdf5";
+          const tabRows = isAll
+            ? rows.filter(r=>r.catId && (previewMonth==="all" || r.date?.split("-")?.[1]===previewMonth))
+            : rows.filter(r=>r.tab===previewTab && (previewMonth==="all" || r.date?.split("-")?.[1]===previewMonth));
+          const tabCats = isAll ? [...(CATEGORIES["일반지출"]||[]),...(CATEGORIES["일상경비"]||[])] : CATEGORIES[previewTab];
           const catsWithData = tabCats.filter(c=>rows.some(r=>r.catId===c.id));
           const activeCats = previewCat==="all" ? catsWithData : catsWithData.filter(c=>c.id===previewCat);
           const tabTotal = tabRows.reduce((s,r)=>s+r.amount,0);
@@ -1751,12 +1754,12 @@ function App() {
               <div style={{display:"flex",gap:12,marginBottom:20,alignItems:"center",flexWrap:"wrap"}}>
                 {/* Tab switcher */}
                 <div style={{display:"flex",gap:0,borderRadius:"var(--radius-md)",overflow:"hidden",border:"1px solid var(--gray-200)",boxShadow:"var(--shadow-sm)"}}>
-                  {["일반지출","일상경비"].map(t=>(
+                  {["통합","일반지출","일상경비"].map(t=>(
                     <button key={t} onClick={()=>{setPreviewTab(t);setPreviewCat("all");setPreviewMonth("all");setEditCell(null);}} style={{
-                      padding:"10px 26px",border:"none",fontSize:13.5,fontWeight:700,fontFamily:"inherit",
-                      background:previewTab===t?(t==="일반지출"?"#3b82f6":"#10b981"):"#fff",
+                      padding:"10px 22px",border:"none",fontSize:13,fontWeight:700,fontFamily:"inherit",
+                      background:previewTab===t?(t==="통합"?"var(--gray-900)":t==="일반지출"?"#3b82f6":"#10b981"):"#fff",
                       color:previewTab===t?"#fff":"var(--gray-500)",transition:"all var(--transition-fast)"
-                    }}>{t} ({rows.filter(r=>r.tab===t).length})</button>
+                    }}>{t} ({t==="통합"?rows.filter(r=>r.catId).length:rows.filter(r=>r.tab===t).length})</button>
                   ))}
                 </div>
 
@@ -1776,7 +1779,7 @@ function App() {
                   style={{padding:"8px 14px",border:"1px solid var(--gray-200)",borderRadius:"var(--radius-sm)",background:"#fff",fontSize:12,fontWeight:600,
                     fontFamily:"inherit",color:"var(--gray-600)",cursor:"pointer",boxShadow:"var(--shadow-sm)"}}>
                   <option value="all">전체 월</option>
-                  {[...new Set(rows.filter(r=>r.tab===previewTab).map(r=>r.date?.split("-")?.[1]).filter(Boolean))].sort().map(m=>(
+                  {[...new Set(rows.filter(r=>isAll?r.catId:r.tab===previewTab).map(r=>r.date?.split("-")?.[1]).filter(Boolean))].sort().map(m=>(
                     <option key={m} value={m}>{parseInt(m)}월</option>
                   ))}
                 </select>
@@ -1796,12 +1799,14 @@ function App() {
               {/* Category tables */}
               {activeCats.map(cat => {
                 const catRows = rows.filter(r=>r.catId===cat.id && (previewMonth==="all" || r.date?.split("-")?.[1]===previewMonth)).sort((a,b)=>sortDesc?b.date.localeCompare(a.date):a.date.localeCompare(b.date));
+                const catAccent = (ALL_CATS.find(c=>c.id===cat.id)?.tab==="일반지출") ? "#3b82f6" : "#10b981";
+                const catLightBg = (ALL_CATS.find(c=>c.id===cat.id)?.tab==="일반지출") ? "#eff6ff" : "#ecfdf5";
                 const catTotal = catRows.reduce((s,r)=>s+r.amount,0);
 
                 return (
                   <div key={cat.id} style={{marginBottom:24,borderRadius:"var(--radius-lg)",border:"1px solid var(--gray-200)",overflow:"hidden",background:"#fff",boxShadow:"var(--shadow-md)",transition:"box-shadow var(--transition-fast)"}}>
                     {/* Category header with budget */}
-                    <div style={{padding:"14px 18px",background:lightBg,borderBottom:"2px solid "+accent+"33"}}>
+                    <div style={{padding:"14px 18px",background:isAll?catLightBg:lightBg,borderBottom:"2px solid "+(isAll?catAccent:accent)+"33"}}>
                       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
                         <div style={{display:"flex",alignItems:"center",gap:10}}>
                           <span style={{width:10,height:10,borderRadius:"50%",background:accent,flexShrink:0}}/>
