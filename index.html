@@ -78,9 +78,9 @@ const sbFetch = async (path, method, body) => {
     return text ? JSON.parse(text) : null;
   } catch(e) { console.error("Supabase 연결 오류:", e); return null; }
 };
-// supabase 연결 테스트 (REST API 사용 가능 여부)
+// supabase 연결 테스트 (Promise로 관리하여 DB 함수들이 연결 완료를 기다림)
 let supabaseReady = false;
-(async()=>{
+const supabaseReadyPromise = (async()=>{
   try {
     const res = await fetch(`${SUPABASE_URL}/rest/v1/departments?select=name&limit=1`, {
       headers: {"apikey": SUPABASE_KEY, "Authorization": `Bearer ${SUPABASE_KEY}`}
@@ -89,6 +89,7 @@ let supabaseReady = false;
     if(supabaseReady) console.log("Supabase 연결 성공");
     else console.warn("Supabase 연결 실패 - localStorage만 사용");
   } catch { console.warn("Supabase 연결 불가 - localStorage만 사용"); }
+  return supabaseReady;
 })();
 
 // Supabase DB 함수들
@@ -96,29 +97,34 @@ const ADMIN_PASSWORD = "admin0922";
 let _syncTimer = null;
 
 async function dbSaveData(department, data) {
+  await supabaseReadyPromise;
   if (!supabaseReady) return;
   await sbFetch("expense_data", "POST", {department, data, updated_at: new Date().toISOString()});
 }
 
 async function dbLoadData(department) {
+  await supabaseReadyPromise;
   if (!supabaseReady) return null;
   const res = await sbFetch(`expense_data?department=eq.${encodeURIComponent(department)}&select=data`, "GET");
   return (res && res.length > 0) ? res[0].data : null;
 }
 
 async function dbLoadAllDepartments() {
+  await supabaseReadyPromise;
   if (!supabaseReady) return [];
   const res = await sbFetch("expense_data?select=department,data,updated_at&order=department", "GET");
   return res || [];
 }
 
 async function dbGetDepartment(name) {
+  await supabaseReadyPromise;
   if (!supabaseReady) return null;
   const res = await sbFetch(`departments?name=eq.${encodeURIComponent(name)}&select=*`, "GET");
   return (res && res.length > 0) ? res[0] : null;
 }
 
 async function dbRegisterDepartment(name, password) {
+  await supabaseReadyPromise;
   if (!supabaseReady) return false;
   const res = await sbFetch("departments", "POST", {name, password});
   return !!res;
