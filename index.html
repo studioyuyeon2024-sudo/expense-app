@@ -686,11 +686,9 @@ function App() {
           if(data.preset && data.preset !== presetName) {
             if(!confirm(`이 백업은 "${data.preset}" 프리셋의 데이터입니다.\n현재 프리셋은 "${presetName}"입니다.\n계속 불러오시겠습니까?`)) return;
           }
-          const merged=[...rows]; const keys=new Set(rows.map(r=>`${r.date}|${r.amount}|${r.place}`));
-          let added=0;
-          data.rows.forEach(r=>{if(!keys.has(`${r.date}|${r.amount}|${r.place}`)){merged.push(r);added++;}});
-          persist(merged,{...budgets,...(data.budgets||{})},{...catNames,...(data.catNames||{})},{...customDocTmpls,...(data.customDocTmpls||{})});
-          notify(`불러오기 완료! (${added}건 추가, 중복 ${data.rows.length-added}건 제외)`);
+          if(!confirm("백업 데이터로 완전히 교체합니다.\n현재 데이터는 사라집니다. 계속하시겠습니까?")) return;
+          persist(data.rows, data.budgets||{}, data.catNames||{}, data.customDocTmpls||{});
+          notify(`불러오기 완료! (${data.rows.length}건 교체)`);
         }
       } catch { notify("파일 형식 오류","err"); }
     };
