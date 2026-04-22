@@ -652,15 +652,45 @@ function App() {
   };
 
   // 저장된 doc 메타로 모달을 다시 띄움 (성공 시 true)
+  // 저장된 사용내역(공문 제목)에서 titleId/nValue 역추적 (기존 데이터 호환)
+  const matchDocTitleId = (catId, storedTitle) => {
+    const tmpl = DOC_TEMPLATES[catId];
+    if (!tmpl || !storedTitle) return null;
+    // "(교육)제목(M.D.)" → "제목"
+    let t = storedTitle.replace(/^\(교육\)/, "").replace(/\(\d+\.\d+\.\)$/, "");
+    for (const titleObj of tmpl.titles) {
+      if (t === titleObj.label) return { titleId: titleObj.id, nValue: "" };
+      if (titleObj.hasN) {
+        const esc = titleObj.label.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+        const re = new RegExp("^" + esc.replace("N", "(\\d+)") + "$");
+        const m = t.match(re);
+        if (m) return { titleId: titleObj.id, nValue: m[1] };
+      }
+    }
+    return null;
+  };
+
   const reopenDocModal = (row) => {
-    const titleId = row.extra?._docTitleId;
-    if (!titleId) return false;
+    let titleId = row.extra?._docTitleId;
+    let nVal = row.extra?._docNValue || "";
+    let mode = row.extra?._docMode || "single";
+    // 메타 없는 기존 데이터: 사용내역으로 역추적
+    if (!titleId) {
+      const stored = row.extra?.["사용내역"] || row.extra?.["사용목적"];
+      const match = matchDocTitleId(row.catId, stored);
+      if (!match) return false;
+      titleId = match.titleId;
+      nVal = match.nValue;
+      // 같은 사용목적 공유하는 행이 2개 이상이면 combined로 추정
+      const purpose = row.extra?.["사용목적"];
+      if (purpose && rows.filter(r => r.catId === row.catId && r.extra?.["사용목적"] === purpose).length >= 2) {
+        mode = "combined";
+      }
+    }
     const tmpl = DOC_TEMPLATES[row.catId];
     if (!tmpl) return false;
     const titleObj = tmpl.titles.find(t => t.id === titleId);
     if (!titleObj) return false;
-    const nVal = row.extra?._docNValue || "";
-    const mode = row.extra?._docMode || "single";
     if (mode === "combined") {
       const purpose = row.extra?.["사용목적"];
       const groupRows = rows.filter(r => r.catId === row.catId && r.extra?.["사용목적"] === purpose);
@@ -2152,7 +2182,7 @@ function App() {
                                   </td>;
                                 }
 
-                                const hasDocMeta = isDetail && !!row.extra?._docTitleId;
+                                const hasDocMeta = isDetail && (!!row.extra?._docTitleId || (DOC_TEMPLATES[cat.id] && !!matchDocTitleId(cat.id, row.extra?.["사용내역"] || row.extra?.["사용목적"])));
                                 return (
                                   <td key={fi}
                                     onClick={()=>{
