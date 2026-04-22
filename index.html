@@ -97,11 +97,22 @@ const supabaseReadyPromise = (async()=>{
 // Supabase DB 함수들
 const ADMIN_PASSWORD = "admin0922";
 let _syncTimer = null;
+// DB 동기화 상태 리스너 (App이 등록)
+let _syncStatusListener = null;
+const setSyncStatusListener = (fn) => { _syncStatusListener = fn; };
+const emitSyncStatus = (status) => { if (_syncStatusListener) _syncStatusListener(status); };
 
 async function dbSaveData(department, data) {
   await supabaseReadyPromise;
-  if (!supabaseReady) return;
-  await sbFetch("expense_data", "POST", {department, data, updated_at: new Date().toISOString()});
+  if (!supabaseReady) {
+    emitSyncStatus({ok:false, reason:"disconnected", dept:department, at:new Date().toISOString()});
+    return false;
+  }
+  emitSyncStatus({ok:null, reason:"syncing", dept:department});
+  const res = await sbFetch("expense_data", "POST", {department, data, updated_at: new Date().toISOString()});
+  const ok = res !== null;
+  emitSyncStatus({ok, reason:ok?"synced":"error", dept:department, at:new Date().toISOString()});
+  return ok;
 }
 
 async function dbLoadData(department) {
@@ -456,6 +467,7 @@ function App() {
   const [loginError, setLoginError] = useState("");
   const [adminMode, setAdminMode] = useState(false);
   const [adminData, setAdminData] = useState([]);
+  const [syncStatus, setSyncStatus] = useState({ok:true, reason:"idle"}); // DB 동기화 상태
   const fRef = useRef(null);
 
   // Derive preset data
@@ -729,6 +741,22 @@ function App() {
     window.addEventListener("beforeunload", handler);
     return () => window.removeEventListener("beforeunload", handler);
   }, [presetName, rows.length]);
+
+  // DB 동기화 상태 리스너 + 자동 ping (중지 방지: 5일마다)
+  useEffect(() => {
+    setSyncStatusListener(setSyncStatus);
+    // 페이지 로드시 1회 + 이후 5일마다 ping
+    const ping = async () => {
+      await supabaseReadyPromise;
+      if (supabaseReady) await sbFetch("departments?select=name&limit=1", "GET");
+    };
+    ping();
+    const lastPingKey = "expenseApp_lastPing";
+    const last = parseInt(localStorage.getItem(lastPingKey)||"0");
+    const now = Date.now();
+    if (now - last > 5*24*60*60*1000) { ping(); localStorage.setItem(lastPingKey, String(now)); }
+    return () => setSyncStatusListener(null);
+  }, []);
 
   // 페이지 포커스 복귀 시 백업 배너 표시 (beforeunload 취소 후 돌아왔을 때)
   useEffect(() => {
@@ -1441,6 +1469,22 @@ function App() {
         borderLeft:`4px solid ${toast.type==="ok"?"#16a34a":"#dc2626"}`,boxShadow:"var(--shadow-lg)",animation:"scaleIn .25s ease",
         display:"flex",alignItems:"center",gap:8,backdropFilter:"blur(8px)"
       }}><span style={{fontSize:15}}>{toast.type==="ok"?"✓":"⚠"}</span> {toast.msg}</div>}
+
+      {/* DB 동기화 상태 배지 (저장 실패 시 경고) */}
+      {(syncStatus.reason==="disconnected" || syncStatus.reason==="error") && <div style={{position:"fixed",bottom:20,right:20,padding:"12px 18px",borderRadius:"var(--radius-md)",fontSize:12.5,fontWeight:600,zIndex:1090,
+        background:"#fef2f2",color:"#b91c1c",borderLeft:"4px solid #dc2626",boxShadow:"var(--shadow-lg)",
+        display:"flex",alignItems:"center",gap:10,maxWidth:340
+      }}>
+        <span style={{fontSize:18}}>⚠️</span>
+        <div>
+          <div style={{fontWeight:800,marginBottom:2}}>DB 저장 실패</div>
+          <div style={{fontSize:11,color:"#7f1d1d",lineHeight:1.4}}>
+            {syncStatus.reason==="disconnected"
+              ? "Supabase 연결 안됨. 데이터는 이 기기에만 저장 중입니다. 관리자에게 문의하세요."
+              : "DB 저장 중 오류. 다시 시도 예정."}
+          </div>
+        </div>
+      </div>}
 
       {/* 종료 전 백업 안내 배너 */}
       {showExitBackup && rows.length>0 && <div style={{position:"fixed",top:0,left:0,right:0,zIndex:1200,
@@ -2581,8 +2625,20 @@ function App() {
                 <p style={MS.p}>사용내역 보기에서 <strong>"▼ 최신순 / ▲ 오래된순"</strong> 버튼으로 정렬 변경</p>
               </div>
 
+              <div style={MS.sec}>
+                <h2 style={MS.h2}><span>📢</span> 업데이트 내역</h2>
+                <h3 style={MS.h3}>v2.1 (2026-04-22)</h3>
+                <p style={MS.p}>⚠️ <strong>DB 저장 실패 경고 기능 추가</strong> - Supabase 연결이 끊기면 화면 오른쪽 아래에 경고 배지가 표시됩니다. 이때는 데이터가 이 기기에만 저장되니 즉시 관리자에게 문의하세요.</p>
+                <p style={MS.p}>🔄 <strong>자동 ping 추가</strong> - 앱 실행 시 Supabase 서버에 자동으로 신호를 보내 중지 상태를 방지합니다.</p>
+                <p style={MS.p}>📥 <strong>백업 불러오기 완전 교체 방식</strong> - 기존 데이터와 섞이지 않고 백업 파일로 완전히 대체됩니다.</p>
+                <p style={MS.p}>📊 <strong>월 필터 버그 수정</strong> - 월별로 필터링해도 상단의 총예산/집행액은 전체 연도 기준으로 표시됩니다.</p>
+                <h3 style={MS.h3}>v2.0</h3>
+                <p style={MS.p}>Supabase DB 연동 (과간 데이터 공유), 관리자 대시보드, 비밀번호 로그인, 연도별 예산 관리, 월별 소계, 묶음 연동 등.</p>
+                <div style={{...MS.tip,marginTop:12}}>💡 <strong>주의:</strong> 오른쪽 아래에 <strong style={{color:"#dc2626"}}>DB 저장 실패</strong> 경고가 뜨면, 메뉴의 <strong>💾 파일 백업</strong>으로 즉시 로컬 백업 후 관리자에게 알리세요.</div>
+              </div>
+
               <div style={{textAlign:"center",padding:"20px 0",color:"var(--gray-300)",fontSize:12}}>
-                지출관리 앱 v2.0 | 문의사항은 관리자에게 연락하세요
+                지출관리 앱 v2.1 | 문의사항은 관리자에게 연락하세요
               </div>
             </>;
           })()}
