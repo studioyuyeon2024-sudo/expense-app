@@ -479,16 +479,36 @@ function App() {
     const preset = ap[name];
     if (!preset) { setLoading(false); return; }
     const defB = getDefaultBudgets(preset.categories);
-    const d = loadData(name);
-    setRows(d.rows||[]);
-    const mb = migrateBudgets(d.budgets||{});
+    const localD = loadData(name);
+    // 우선 로컬 데이터 표시 후 DB에서 로드
+    setRows(localD.rows||[]);
+    const mb0 = migrateBudgets(localD.budgets||{});
     const yr = String(new Date().getFullYear());
-    setBudgets({...mb, [yr]: {...defB, ...(mb[yr]||{})}});
-    setCatNames(d.catNames||{});
-    setCustomDocTmpls(d.customDocTmpls||{});
+    setBudgets({...mb0, [yr]: {...defB, ...(mb0[yr]||{})}});
+    setCatNames(localD.catNames||{});
+    setCustomDocTmpls(localD.customDocTmpls||{});
     setView("home");
     setSetupMode(null);
-    setLoading(false);
+    // DB에서 로드하여 병합
+    (async () => {
+      try {
+        const dbD = await dbLoadData(name);
+        if (dbD) {
+          const dbRows = dbD.rows || [];
+          const localRows = localD.rows || [];
+          const keys = new Set(dbRows.map(r=>`${r.date}|${r.amount}|${r.place}`));
+          const merged = [...dbRows, ...localRows.filter(r=>!keys.has(`${r.date}|${r.amount}|${r.place}`))];
+          setRows(merged);
+          const mb = migrateBudgets(dbD.budgets||{});
+          setBudgets({...mb, [yr]: {...defB, ...(mb[yr]||{})}});
+          setCatNames({...(dbD.catNames||{}), ...(localD.catNames||{})});
+          setCustomDocTmpls({...(dbD.customDocTmpls||{}), ...(localD.customDocTmpls||{})});
+          const savePayload = {rows:merged, budgets:{...mb, [yr]: {...defB, ...(mb[yr]||{})}}, catNames:{...(dbD.catNames||{}), ...(localD.catNames||{})}, customDocTmpls:{...(dbD.customDocTmpls||{}), ...(localD.customDocTmpls||{})}};
+          saveData(name, savePayload);
+        }
+      } catch(e) { console.error("DB 로드 실패:", e); }
+      setLoading(false);
+    })();
   };
 
   // Save custom preset
