@@ -643,8 +643,33 @@ function App() {
   // Save 사용목적 to row.extra when a document is generated
   const saveDocPurpose = (docTitle, modal) => {
     const ids = modal.mode === "combined" ? modal.rows.map(r=>r.id) : [modal.row.id];
-    const updated = rows.map(r => ids.includes(r.id) ? {...r, extra:{...r.extra, "사용목적": docTitle, "사용내역": docTitle}} : r);
+    const docMeta = { _docTitleId: modal.titleId, _docNValue: modal.nValue||"", _docMode: modal.mode||"single" };
+    const updated = rows.map(r => ids.includes(r.id) ? {...r, extra:{...r.extra, "사용목적": docTitle, "사용내역": docTitle, ...docMeta}} : r);
     persist(updated);
+  };
+
+  // 저장된 doc 메타로 모달을 다시 띄움 (성공 시 true)
+  const reopenDocModal = (row) => {
+    const titleId = row.extra?._docTitleId;
+    if (!titleId) return false;
+    const tmpl = DOC_TEMPLATES[row.catId];
+    if (!tmpl) return false;
+    const titleObj = tmpl.titles.find(t => t.id === titleId);
+    if (!titleObj) return false;
+    const nVal = row.extra?._docNValue || "";
+    const mode = row.extra?._docMode || "single";
+    if (mode === "combined") {
+      const purpose = row.extra?.["사용목적"];
+      const groupRows = rows.filter(r => r.catId === row.catId && r.extra?.["사용목적"] === purpose);
+      if (groupRows.length >= 2) {
+        const doc = generateCombinedDoc(groupRows, tmpl, titleObj, nVal);
+        setDocModal({ row: groupRows[0], rows: groupRows, catId: row.catId, step: "preview", titleId, nValue: nVal, docText: doc.body, docTitle: doc.title, mode: "combined" });
+        return true;
+      }
+    }
+    const doc = generateDoc(row, tmpl, titleObj, nVal);
+    setDocModal({ row, rows:[row], catId: row.catId, step: "preview", titleId, nValue: nVal, docText: doc.body, docTitle: doc.title, mode: "single" });
+    return true;
   };
 
   const openDocModal = (row) => {
@@ -1797,10 +1822,28 @@ function App() {
           };
           // helper: set cell value
           const setCellVal = (row, f, cat, val) => {
-            if(f===cat.dateField) persist(rows.map(r=>r.id===row.id?{...r,date:val}:r));
-            else if(f===cat.amountField||f==="금액"||f==="지출") persist(rows.map(r=>r.id===row.id?{...r,amount:parseAmt(val)}:r));
-            else if(f===cat.placeField||f==="장소") persist(rows.map(r=>r.id===row.id?{...r,place:val}:r));
-            else persist(rows.map(r=>r.id===row.id?{...r,extra:{...r.extra,[f]:val}}:r));
+            let updated;
+            if(f===cat.dateField) updated = rows.map(r=>r.id===row.id?{...r,date:val}:r);
+            else if(f===cat.amountField||f==="금액"||f==="지출") updated = rows.map(r=>r.id===row.id?{...r,amount:parseAmt(val)}:r);
+            else if(f===cat.placeField||f==="장소") updated = rows.map(r=>r.id===row.id?{...r,place:val}:r);
+            else updated = rows.map(r=>r.id===row.id?{...r,extra:{...r.extra,[f]:val}}:r);
+            // 자동 공문 체크: 사용내역(or 사용목적) + 인원이 모두 있으면 진행상태에 공문 추가
+            // 카테고리에 인원 필드가 없으면 사용내역만으로 트리거
+            const ur = updated.find(r=>r.id===row.id);
+            if (ur) {
+              const content = (ur.extra?.["사용내역"]||ur.extra?.["사용목적"]||"").trim();
+              const hasInwon = cat.fields.includes("인원");
+              const people = (ur.extra?.["인원"]||"").trim();
+              const trigger = content && (hasInwon ? !!people : true);
+              if (trigger) {
+                const st = ur.extra?.["진행상태"]||"";
+                if (!st.includes("공문")) {
+                  const newSt = st ? st + ",공문" : "공문";
+                  updated = updated.map(r=>r.id===row.id?{...r,extra:{...r.extra,"진행상태":newSt}}:r);
+                }
+              }
+            }
+            persist(updated);
           };
           const isEditing = (rowId,f) => editCell && editCell.rowId===rowId && editCell.field===f;
 
@@ -2106,20 +2149,26 @@ function App() {
                                   </td>;
                                 }
 
+                                const hasDocMeta = isDetail && !!row.extra?._docTitleId;
                                 return (
                                   <td key={fi}
-                                    onClick={()=>{if(editable)setEditCell({rowId:row.id,field:f});}}
+                                    onClick={()=>{
+                                      if(!editable) return;
+                                      if(hasDocMeta && reopenDocModal(row)) return;
+                                      setEditCell({rowId:row.id,field:f});
+                                    }}
                                     style={{
                                       ...S.pvTd,
-                                      cursor:editable?"text":"default",
+                                      cursor:editable?(hasDocMeta?"pointer":"text"):"default",
                                       ...(isAmt?{textAlign:"right",fontWeight:700,fontVariantNumeric:"tabular-nums",color:"#0f172a"}:{}),
                                       ...(f==="장소"||f===cat.placeField?{fontWeight:600,overflow:"hidden",textOverflow:"ellipsis"}:{}),
                                       ...(isDetail?{overflow:"hidden",textOverflow:"ellipsis"}:{}),
+                                      ...(hasDocMeta?{color:"#6366f1",fontWeight:600}:{}),
                                       ...(!val&&!isAmt&&!isMon?{color:"#d1d5db"}:{}),
                                       ...(editable?{borderBottom:"1px dashed #d1d5db22"}:{}),
                                     }}
-                                    title={editable?(val||"클릭하여 편집"):""}>
-                                    {isAmt ? <>{fmt(row.amount)}<span style={{fontWeight:400,color:"#94a3b8",fontSize:11}}>원</span></> : (isMon ? (val?val+"월":"") : (val || "—"))}
+                                    title={hasDocMeta?"클릭하여 공문 다시 보기":(editable?(val||"클릭하여 편집"):"")}>
+                                    {isAmt ? <>{fmt(row.amount)}<span style={{fontWeight:400,color:"#94a3b8",fontSize:11}}>원</span></> : (isMon ? (val?val+"월":"") : (val ? (hasDocMeta?<>📄 {val}</>:val) : "—"))}
                                   </td>
                                 );
                               })}
