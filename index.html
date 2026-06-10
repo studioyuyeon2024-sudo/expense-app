@@ -84,8 +84,11 @@ const sbFetch = async (path, method, body) => {
 // supabase 연결 테스트 (Promise로 관리하여 DB 함수들이 연결 완료를 기다림)
 let supabaseReady = false;
 const SUPABASE_DISABLED = false;
-const supabaseReadyPromise = (async()=>{
-  if (SUPABASE_DISABLED) { console.warn("Supabase 임시 비활성화 - localStorage만 사용"); return false; }
+let _supabaseReadyResolve;
+let supabaseReadyPromise = new Promise(r => { _supabaseReadyResolve = r; });
+
+const testSupabaseConnection = async () => {
+  if (SUPABASE_DISABLED) { console.warn("Supabase 임시 비활성화"); return false; }
   try {
     const res = await fetch(`${SUPABASE_URL}/rest/v1/departments?select=name&limit=1`, {
       headers: {"apikey": SUPABASE_KEY, "Authorization": `Bearer ${SUPABASE_KEY}`}
@@ -95,6 +98,16 @@ const supabaseReadyPromise = (async()=>{
     else console.warn("Supabase 연결 실패 - localStorage만 사용");
   } catch { console.warn("Supabase 연결 불가 - localStorage만 사용"); }
   return supabaseReady;
+};
+
+// 초기 연결: 최대 3회 재시도 (5초 간격)
+(async()=>{
+  for (let i = 0; i < 3; i++) {
+    const ok = await testSupabaseConnection();
+    if (ok) break;
+    if (i < 2) await new Promise(r => setTimeout(r, 5000));
+  }
+  _supabaseReadyResolve(supabaseReady);
 })();
 
 // Supabase DB 함수들
@@ -1529,18 +1542,29 @@ function App() {
       }}><span style={{fontSize:15}}>{toast.type==="ok"?"✓":"⚠"}</span> {toast.msg}</div>}
 
       {/* DB 동기화 상태 배지 (저장 실패 시 경고) */}
-      {(syncStatus.reason==="disconnected" || syncStatus.reason==="error") && <div style={{position:"fixed",bottom:20,right:20,padding:"12px 18px",borderRadius:"var(--radius-md)",fontSize:12.5,fontWeight:600,zIndex:1090,
+      {(syncStatus.reason==="disconnected" || syncStatus.reason==="error" || !supabaseReady) && presetName && <div style={{position:"fixed",bottom:20,right:20,padding:"12px 18px",borderRadius:"var(--radius-md)",fontSize:12.5,fontWeight:600,zIndex:1090,
         background:"#fef2f2",color:"#b91c1c",borderLeft:"4px solid #dc2626",boxShadow:"var(--shadow-lg)",
-        display:"flex",alignItems:"center",gap:10,maxWidth:340
+        display:"flex",alignItems:"center",gap:10,maxWidth:360
       }}>
         <span style={{fontSize:18}}>⚠️</span>
         <div>
-          <div style={{fontWeight:800,marginBottom:2}}>DB 저장 실패</div>
-          <div style={{fontSize:11,color:"#7f1d1d",lineHeight:1.4}}>
-            {syncStatus.reason==="disconnected"
-              ? "Supabase 연결 안됨. 데이터는 이 기기에만 저장 중입니다. 관리자에게 문의하세요."
-              : "DB 저장 중 오류. 다시 시도 예정."}
+          <div style={{fontWeight:800,marginBottom:2}}>DB 연결 안됨</div>
+          <div style={{fontSize:11,color:"#7f1d1d",lineHeight:1.4,marginBottom:6}}>
+            데이터는 이 기기에만 저장됩니다. 인터넷을 확인하세요.
           </div>
+          <button onClick={async()=>{
+            const ok = await testSupabaseConnection();
+            if(ok) {
+              setSyncStatus({ok:true,reason:"synced"});
+              const d = {rows, budgets, catNames, customDocTmpls};
+              dbSaveData(presetName, d);
+              alert("DB 재연결 성공! 데이터를 동기화합니다.");
+            } else {
+              alert("여전히 연결할 수 없습니다.\nSupabase 대시보드에서 프로젝트가 일시정지(Paused)인지 확인하세요.");
+            }
+          }} style={{padding:"5px 14px",background:"#b91c1c",color:"#fff",border:"none",borderRadius:5,fontSize:11,fontWeight:700,cursor:"pointer"}}>
+            🔄 재연결 시도
+          </button>
         </div>
       </div>}
 
